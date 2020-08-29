@@ -27,6 +27,7 @@ public class Renderer {
 
 
     public Renderer() {
+
         transformation = new Transformation();
     }
 
@@ -49,7 +50,7 @@ public class Renderer {
         projectionMatrix =  transformation.getProjectionMatrix(FOV, (float) window.getWidth(),  (float)window.getHeight(),  Z_NEAR, Z_FAR);
         shaderProgram.createUniform("projectionMatrix");
 
-        shaderProgram.createUniform("worldMatrix");
+        shaderProgram.createUniform("modelViewMatrix");
     }
 
 
@@ -71,17 +72,23 @@ public class Renderer {
         glEnable(GL_CULL_FACE);
         glCullFace(GL_FRONT);
         glFrontFace(GL_CCW);
+        glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
         shaderProgram.bind();
 
         shaderProgram.setUniform("projectionMatrix",projectionMatrix);
 
-        // Position where the camera is
-        Matrix4f worldMatrix =
-                transformation.getWorldMatrix( camera.getPosition(), camera.getRotation(), 1.0f );
-        shaderProgram.setUniform("worldMatrix", worldMatrix);
+        // Update view Matrix
+        Matrix4f viewMatrix = transformation.getViewMatrix(camera);
 
-        world.drawMap();
+        // Get all rooms from the map to draw
+        for (Room room : world.getRooms()){
+
+            Matrix4f modelViewMatrix = transformation.getModelViewMatrix(room, viewMatrix) ;
+            shaderProgram.setUniform("modelViewMatrix", modelViewMatrix);
+
+            room.render();
+        }
 
         shaderProgram.unbind();
 

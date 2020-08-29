@@ -6,7 +6,12 @@ import java.util.*;
 public class RandomMap {
 
     private final int MAX_CELLS = 10;
-    private final int CELL_SIDE_METERS = 30;
+
+    // For now the dimensions need to be multiples of Room (numStripsPerWall)
+    private final int CELL_WIDTH_METERS   = 180;
+    private final int CELL_HEIGHT_METERS  = 60;
+    private final int CELL_FLOOR_METERS   = 300;
+
     private int[][] mapMatrix = new int[MAX_CELLS][MAX_CELLS];
     private int totalGeneratedRooms = 0;
     private List<Room> rooms;
@@ -74,7 +79,7 @@ public class RandomMap {
 
                 int roomIndex = mapMatrix[x][y];
                 if (roomIndex>0){
-                    Room room = new Room(roomIndex);
+                    Room room = new Room(roomIndex, 1.0f);
                     //Link with room on the West
                     if (x > 0 && mapMatrix[x-1][y] != 0)
                         room.setPathWithRoomIndex("W",mapMatrix[x-1][y]);
@@ -101,7 +106,7 @@ public class RandomMap {
         generateMap(MAX_CELLS/2, MAX_CELLS/2 , totalNumberRooms);
         rooms = generateRoomsFromMap();
         for (Room room : rooms)
-            room.createModel(CELL_SIDE_METERS);
+            room.createModel(CELL_WIDTH_METERS, CELL_HEIGHT_METERS, CELL_FLOOR_METERS);
 
     }
 
@@ -115,11 +120,13 @@ public class RandomMap {
          }
     }
 
-    public void drawMap() {
+    public List<Room> getRooms() {
         //for (com.mgr.engine.Room room : rooms)
         //    room.drawRoom();
+        List<Room> result = new ArrayList<>();
         Room room = rooms.get(0);
-        room.drawRoom();
+        result.add(room);
+        return result;
     }
 
     public void cleanUp(){

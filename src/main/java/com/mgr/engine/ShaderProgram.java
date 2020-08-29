@@ -95,10 +95,12 @@ public class ShaderProgram {
     }
 
     public void bind() {
+
         glUseProgram(programId);
     }
 
     public void unbind() {
+
         glUseProgram(0);
     }
 

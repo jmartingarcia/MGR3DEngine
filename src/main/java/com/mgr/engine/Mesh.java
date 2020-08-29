@@ -1,5 +1,6 @@
 package com.mgr.engine;
 
+import org.lwjgl.opengl.GL43;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.FloatBuffer;
@@ -68,10 +69,12 @@ public class Mesh {
     }
 
     public int getVaoId() {
+
         return vaoId;
     }
 
     public int getVertexCount() {
+
         return vertexCount;
     }
 
@@ -86,5 +89,14 @@ public class Mesh {
         // Delete the VAO
         glBindVertexArray(0);
         glDeleteVertexArrays(vaoId);
+    }
+
+    public void render() {
+
+        GL43.glBindVertexArray(vaoId);
+        GL43.glEnableVertexAttribArray(0);
+        GL43.glDrawElements(GL43.GL_TRIANGLES, vertexCount, GL43.GL_UNSIGNED_INT, 0);
+        GL43.glDisableVertexAttribArray(0);
+        GL43.glBindVertexArray(0);
     }
 }
