@@ -5,8 +5,12 @@ import org.lwjgl.system.MemoryUtil;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
-import static org.lwjgl.opengl.GL11.GL_FLOAT;
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
+import static org.lwjgl.opengl.GL13.glActiveTexture;
 import static org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER;
 import static org.lwjgl.opengl.GL15.GL_ELEMENT_ARRAY_BUFFER;
 import static org.lwjgl.opengl.GL15.GL_STATIC_DRAW;
@@ -25,15 +29,22 @@ public class Mesh {
 
     private final int vaoId;
 
-    private final int posVboId;
-
-    private final int idxVboId;
+    private final List<Integer> vboIdList;
 
     private final int vertexCount;
 
-    public Mesh(float[] positions, int[] indices) {
+    private final Texture texture;
+
+
+    public Mesh(float[] positions, int[] indices, float[] textCoords, Texture texture) {
+
+        this.texture = texture;
+        vboIdList = new ArrayList<>();
+
         FloatBuffer posBuffer = null;
         IntBuffer indicesBuffer = null;
+        FloatBuffer textCoordsBuffer = null;
+
         try {
             vertexCount = indices.length;
 
@@ -41,7 +52,8 @@ public class Mesh {
             glBindVertexArray(vaoId);
 
             // Position VBO
-            posVboId = glGenBuffers();
+            int posVboId = glGenBuffers();
+            vboIdList.add(posVboId);
             posBuffer = MemoryUtil.memAllocFloat(positions.length);
             posBuffer.put(positions).flip();
             glBindBuffer(GL_ARRAY_BUFFER, posVboId);
@@ -50,11 +62,22 @@ public class Mesh {
             glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
 
             // Index VBO
-            idxVboId = glGenBuffers();
+            int idxVboId = glGenBuffers();
+            vboIdList.add(idxVboId);
             indicesBuffer = MemoryUtil.memAllocInt(indices.length);
             indicesBuffer.put(indices).flip();
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, idxVboId);
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesBuffer, GL_STATIC_DRAW);
+
+            // Texture coordinates VBO
+            int textboId = glGenBuffers();
+            vboIdList.add(textboId);
+            textCoordsBuffer = MemoryUtil.memAllocFloat(textCoords.length);
+            textCoordsBuffer.put(textCoords).flip();
+            glBindBuffer(GL_ARRAY_BUFFER, textboId);
+            glBufferData(GL_ARRAY_BUFFER, textCoordsBuffer, GL_STATIC_DRAW);
+            glEnableVertexAttribArray(1);
+            glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
 
             glBindBuffer(GL_ARRAY_BUFFER, 0);
             glBindVertexArray(0);
@@ -62,6 +85,11 @@ public class Mesh {
             if (posBuffer != null) {
                 MemoryUtil.memFree(posBuffer);
             }
+
+            if (textCoordsBuffer != null){
+                MemoryUtil.memFree(textCoordsBuffer);
+            }
+
             if (indicesBuffer != null) {
                 MemoryUtil.memFree(indicesBuffer);
             }
@@ -83,20 +111,28 @@ public class Mesh {
 
         // Delete the VBOs
         glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glDeleteBuffers(posVboId);
-        glDeleteBuffers(idxVboId);
+
+        for (Integer vbId : vboIdList) {
+            glDeleteBuffers(vbId);
+        }
 
         // Delete the VAO
         glBindVertexArray(0);
         glDeleteVertexArrays(vaoId);
+
+        texture.cleanup();
     }
 
     public void render() {
+        // Activate firs texture bank
+        glActiveTexture(GL_TEXTURE0);
+        // Bind the texture
+        glBindTexture(GL_TEXTURE_2D, texture.getId());
 
-        GL43.glBindVertexArray(vaoId);
-        GL43.glEnableVertexAttribArray(0);
-        GL43.glDrawElements(GL43.GL_TRIANGLES, vertexCount, GL43.GL_UNSIGNED_INT, 0);
-        GL43.glDisableVertexAttribArray(0);
-        GL43.glBindVertexArray(0);
+        glBindVertexArray(vaoId);
+        glEnableVertexAttribArray(0);
+        glDrawElements(GL43.GL_TRIANGLES, vertexCount, GL43.GL_UNSIGNED_INT, 0);
+        glDisableVertexAttribArray(0);
+        glBindVertexArray(0);
     }
 }

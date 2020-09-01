@@ -1,9 +1,20 @@
 package com.mgr.engine;
 
 
-import java.awt.Font;
+import org.lwjgl.opengl.GL43;
+import org.lwjgl.stb.STBEasyFont;
+import org.lwjgl.system.MemoryUtil;
+
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL15.*;
+import static org.lwjgl.opengl.GL15.GL_STATIC_DRAW;
+import static org.lwjgl.opengl.GL20.*;
+import static org.lwjgl.opengl.GL30.*;
+import static org.lwjgl.stb.STBEasyFont.*;
 
 public class Profiler {
 

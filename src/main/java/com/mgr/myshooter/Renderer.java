@@ -41,16 +41,17 @@ public class Renderer {
         this.world = world;
     }
 
-    public void init(Window window) throws Exception {
+    public void init(Window window, Profiler profiler) throws Exception {
         shaderProgram = new ShaderProgram();
         shaderProgram.createVertexShader(Utils.loadResource("/vertex.vs"));
         shaderProgram.createFragmentShader(Utils.loadResource("/fragment.fs"));
         shaderProgram.link();
 
         projectionMatrix =  transformation.getProjectionMatrix(FOV, (float) window.getWidth(),  (float)window.getHeight(),  Z_NEAR, Z_FAR);
-        shaderProgram.createUniform("projectionMatrix");
 
+        shaderProgram.createUniform("projectionMatrix");
         shaderProgram.createUniform("modelViewMatrix");
+        shaderProgram.createUniform("texture_sampler");
     }
 
 
@@ -59,7 +60,7 @@ public class Renderer {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
-    public void render(Camera camera, Window window) {
+    public void render(final Camera camera, final Window window) {
 
         clear();
 
@@ -72,11 +73,13 @@ public class Renderer {
         glEnable(GL_CULL_FACE);
         glCullFace(GL_FRONT);
         glFrontFace(GL_CCW);
-        glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+        //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
         shaderProgram.bind();
 
         shaderProgram.setUniform("projectionMatrix",projectionMatrix);
+
+        shaderProgram.setUniform("texture_sampler", 0);
 
         // Update view Matrix
         Matrix4f viewMatrix = transformation.getViewMatrix(camera);
@@ -91,7 +94,6 @@ public class Renderer {
         }
 
         shaderProgram.unbind();
-
     }
 
     public void cleanUp() {

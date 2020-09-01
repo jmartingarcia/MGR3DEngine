@@ -3,9 +3,12 @@ package com.mgr.myshooter;
 import com.mgr.engine.GameEngine;
 import com.mgr.engine.IGameLogic;
 
+import java.nio.charset.Charset;
+
 public class Main {
 
     public static void main(String[] args) {
+
         try {
             boolean vSync = true;
             IGameLogic gameLogic = new MGRGame();
@@ -16,4 +19,5 @@ public class Main {
             System.exit(-1);
         }
     }
+
 }

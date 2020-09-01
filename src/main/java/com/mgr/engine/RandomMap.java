@@ -105,8 +105,34 @@ public class RandomMap {
     public void generateRandomMap(Integer totalNumberRooms) {
         generateMap(MAX_CELLS/2, MAX_CELLS/2 , totalNumberRooms);
         rooms = generateRoomsFromMap();
+
+        //Creating room textures. For now all rooms have same textures
+        Texture wallTexture = null,
+                floorTexture = null,
+                ceilingTexture = null;
+
+        try {
+            wallTexture = new Texture("/Users/mgarciar/Documents/Personal/Workspace/MGR3DEngine/build/resources/main/textures/panel1/panel1_Base_Color.jpg");
+        } catch (Exception ex) {
+            System.out.println("Could not load wall textures: " + ex.getMessage());
+        }
+
+        try {
+            floorTexture = new Texture("/Users/mgarciar/Documents/Personal/Workspace/MGR3DEngine/build/resources/main/textures/panel4/panel4_Base_Color.jpg");
+        } catch (Exception ex) {
+            System.out.println("Could not load floor textures: " + ex.getMessage());
+        }
+
+        try {
+            ceilingTexture = new Texture("/Users/mgarciar/Documents/Personal/Workspace/MGR3DEngine/build/resources/main/textures/panel6/panel6_Base_Color.jpg");
+        } catch (Exception ex) {
+            System.out.println("Could not load ceiling textures: " + ex.getMessage());
+        }
+
+
         for (Room room : rooms)
-            room.createModel(CELL_WIDTH_METERS, CELL_HEIGHT_METERS, CELL_FLOOR_METERS);
+            room.createModel(CELL_WIDTH_METERS, CELL_HEIGHT_METERS, CELL_FLOOR_METERS, wallTexture, wallTexture, wallTexture, wallTexture,
+                    floorTexture, ceilingTexture);
 
     }
 

@@ -28,6 +28,8 @@ dependencies {
 
     compile "org.joml:joml:${jomlVersion}"
     compile group: 'org.javatuples', name: 'javatuples', version: '1.2'
+    compile group: 'org.l33tlabs.twl', name: 'pngdecoder', version: '1.0'
+    compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.2'
 
     implementation platform("org.lwjgl:lwjgl-bom:$lwjglVersion")
 

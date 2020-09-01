@@ -41,7 +41,7 @@ public class MGRGame implements IGameLogic {
     
     @Override
     public void init(Window window) throws Exception {
-        renderer.init(window);
+        renderer.init(window, profiler);
         world.generateRandomMap(MAX_NUMBER_ROOMS);
         renderer.setWorld(world);
         player.setPosition(new Vector3f(0.0f, 20.0f, 0.0f));
@@ -74,7 +74,7 @@ public class MGRGame implements IGameLogic {
         } else if ( window.isKeyPressed(GLFW_KEY_LEFT) ) {
             rotation_y = -1;
         } else if ( window.isKeyPressed(GLFW_KEY_T)) {
-            showProfilerData = !showProfilerData;
+            printProfileData();
         }
     }
 
@@ -92,21 +92,17 @@ public class MGRGame implements IGameLogic {
         window.setClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
         renderer.render(player.getCamera(), window);
-
-        //Fill data into profiler
-        if (showProfilerData) {
-            System.out.println("HERE");
-            String text = "( X: "+player.getPosition().x + " , Y: " + player.getPosition().y + " , Z: " + player.getPosition().z + ")";
-            profiler.setProfilerEntry("CAMERA", text);
-            profiler.displayProfileData();
-            showProfilerData = false;
-        }
-
     }
 
     @Override
     public void cleanUp(){
         world.cleanUp();
         renderer.cleanUp();
+    }
+
+    private void printProfileData() {
+        String text = "( X: " + player.getPosition().x + " , Y: " + player.getPosition().y + " , Z: " + player.getPosition().z + ")";
+        profiler.setProfilerEntry("CAMERA", text);
+        profiler.displayProfileData();
     }
 }
