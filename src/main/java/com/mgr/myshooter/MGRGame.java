@@ -19,9 +19,7 @@ public class MGRGame implements IGameLogic {
 
     private final Renderer renderer;
 
-    private final RandomMap world;
-
-    private final Integer MAX_NUMBER_ROOMS = 5;
+    private final World world;
 
     private final Player player;
 
@@ -29,12 +27,13 @@ public class MGRGame implements IGameLogic {
 
     private Profiler profiler;
 
+    private float elapsedTime = 0.0f;
 
 
     public MGRGame() {
 
         renderer = new Renderer();
-        world    = new RandomMap();
+        world    = new World();
         player   = new Player();
         profiler = new Profiler();
     }
@@ -42,7 +41,7 @@ public class MGRGame implements IGameLogic {
     @Override
     public void init(Window window) throws Exception {
         renderer.init(window, profiler);
-        world.generateRandomMap(MAX_NUMBER_ROOMS);
+        world.init();
         renderer.setWorld(world);
         player.setPosition(new Vector3f(0.0f, 20.0f, 0.0f));
         profiler.Init();
@@ -75,15 +74,28 @@ public class MGRGame implements IGameLogic {
             rotation_y = -1;
         } else if ( window.isKeyPressed(GLFW_KEY_T)) {
             printProfileData();
+        } else if ( window.isKeyPressed(GLFW_KEY_N)) { // Add 1 hour
+            world.addTime(60);
+        } else if ( window.isKeyPressed(GLFW_KEY_N)) { // Goes back 1 hour
+            world.addTime(-60);
         }
+
     }
 
     @Override
     public void update(float interval) {
+
+        // Set the time on the world
+        elapsedTime += interval;
+        if (elapsedTime >= 600) { // For now on the world every 10 min real time it's an hour on the virtual world
+            elapsedTime = 0;
+            world.addTime(60);
+        }
+
         //Translation
-        player.walk(new Vector3f(direction_x, direction_y, direction_z));
+        player.walk(interval, new Vector3f(direction_x, direction_y, direction_z));
         //Rotation
-        player.turn(new Vector3f(rotation_x, rotation_y, rotation_z));
+        player.turn(interval, new Vector3f(rotation_x, rotation_y, rotation_z));
     }
 
     @Override

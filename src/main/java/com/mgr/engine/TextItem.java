@@ -1,8 +1,9 @@
 package com.mgr.engine;
 
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
 
 public class TextItem extends GameItem {
     private static final float ZPOS = 0.0f;
@@ -22,7 +23,7 @@ public class TextItem extends GameItem {
 
     private Mesh buildMesh(Texture texture, int numCols, int numRows) {
 
-        byte[] chars = text.getBytes(Charset.forName("ISO-8859-1"));
+        byte[] chars = text.getBytes(ISO_8859_1);
         int numChars = chars.length;
 
         List<Float> positions = new ArrayList();

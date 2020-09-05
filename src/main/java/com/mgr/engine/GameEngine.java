@@ -40,7 +40,7 @@ public class GameEngine implements Runnable {
     protected void gameLoop() {
         float elapsedTime;
         float accumulator = 0f;
-        float interval = 1f / TARGET_UPS;
+        float interval = 1f / TARGET_UPS; //Updates per second (separate then frame per second). This is more for physics calculation. More important!
 
         boolean running = true;
         while (running && !window.windowShouldClose()) {
@@ -63,7 +63,7 @@ public class GameEngine implements Runnable {
     }
 
     private void sync() {
-        float loopSlot = 1f / TARGET_FPS;
+        float loopSlot = 1f / TARGET_FPS;  // Frames per second
         double endTime = timer.getLastLoopTime() + loopSlot;
         while (timer.getTime() < endTime) {
             try {

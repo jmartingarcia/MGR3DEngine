@@ -5,10 +5,12 @@ public class Timer {
     private double lastLoopTime;
     
     public void init() {
+
         lastLoopTime = getTime();
     }
 
-    public double getTime() {
+    public double getTime() { // in seconds
+
         return System.nanoTime() / 1000_000_000.0;
     }
 
@@ -20,6 +22,7 @@ public class Timer {
     }
 
     public double getLastLoopTime() {
+
         return lastLoopTime;
     }
 }

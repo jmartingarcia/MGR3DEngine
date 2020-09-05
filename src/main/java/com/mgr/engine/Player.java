@@ -7,8 +7,8 @@ public class Player {
     //private final Mesh model;
 
     private final Camera camera;
-    private float speed = 1.5f;
-    private float rota_speed = 1.5f;
+    private float speed = 35.0f;
+    private float rota_speed = 25.0f;
 
 
     public Player(){
@@ -32,6 +32,7 @@ public class Player {
     }
 
     public Vector3f getRotation() {
+
         return camera.getRotation();
     }
 
@@ -64,12 +65,12 @@ public class Player {
         camera.movePosition(position.x, position.y, position.z);
     }
 
-    public void walk(final Vector3f speedPerAxis){
-        camera.movePosition(speedPerAxis.x * speed, speedPerAxis.y * speed, speedPerAxis.z * speed);
+    public void walk(final float elapsedSeconds, final Vector3f speedPerAxis){
+        camera.movePosition(speedPerAxis.x * speed * elapsedSeconds, speedPerAxis.y * speed * elapsedSeconds, speedPerAxis.z * speed * elapsedSeconds);
     }
 
-    public void turn(final Vector3f turnSpeedPerAxis){
-        camera.moveRotation(turnSpeedPerAxis.x * rota_speed, turnSpeedPerAxis.y * rota_speed, turnSpeedPerAxis.z * rota_speed);
+    public void turn(final float elapsedSeconds, final Vector3f turnSpeedPerAxis){
+        camera.moveRotation(turnSpeedPerAxis.x * rota_speed * elapsedSeconds, turnSpeedPerAxis.y * rota_speed * elapsedSeconds, turnSpeedPerAxis.z * rota_speed * elapsedSeconds);
     }
 
 }

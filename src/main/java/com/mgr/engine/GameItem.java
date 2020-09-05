@@ -34,14 +34,17 @@ public class GameItem {
     }
 
     public float getScale() {
+
         return scale;
     }
 
     public void setScale(float scale) {
+
         this.scale = scale;
     }
 
     public Vector3f getRotation() {
+
         return rotation;
     }
 

@@ -1,12 +1,17 @@
-package com.mgr.engine;
+package com.mgr.myshooter;
 
+import com.mgr.engine.Material;
+import com.mgr.engine.Mesh;
+import com.mgr.engine.ShaderProgram;
+import com.mgr.engine.Texture;
 import org.apache.commons.lang3.tuple.Triple;
-import org.javatuples.Pair;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
+import org.joml.Vector3i;
+import org.joml.Vector4f;
+
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.Vector;
 
 public class Room {
 
@@ -46,10 +51,12 @@ public class Room {
     private float scale;
 
     public float getScale() {
+
         return scale;
     }
 
     public void setScale(float scale) {
+
         this.scale = scale;
     }
 
@@ -59,6 +66,7 @@ public class Room {
     public Vector3f getWorldPosition() {
         return worldPosition;
     }
+
 
 
 
@@ -191,6 +199,52 @@ public class Room {
     }
 
 
+    private float[] calculateNormals(float[] vertices, int[]indices) {
+
+        HashMap<Integer, Vector3f> normalPerVertex = new HashMap<>();
+
+        // Each face is a triangle with three vertices. Each index point to the actual triangle vertex
+        int normalIdx = 0;
+        for (int idx=0;idx<indices.length;idx+=3){
+            Vector3f[] triangle = new Vector3f[3];
+            for (int vertIdx=0;vertIdx<3;vertIdx++){
+                final int vertexIdx_x = indices[idx + vertIdx]*3;
+                final int vertexIdx_y = indices[idx + vertIdx]*3 + 1;
+                final int vertexIdx_z = indices[idx + vertIdx]*3 + 2;
+                triangle[vertIdx] = new Vector3f(vertices[vertexIdx_x],vertices[vertexIdx_y],vertices[vertexIdx_z]);
+            }
+            final Vector3f vector1 = triangle[0].sub(triangle[1]);
+            final Vector3f vector2 = triangle[2].sub(triangle[1]);
+            final Vector3f normal  = vector1.cross(vector2).normalize();
+
+
+            if (!normalPerVertex.containsKey(indices[idx]*3)) { //Multiply by 3 to transform to vertex space, each index represent 3 vertex positions (x,y,z)
+                normalPerVertex.put(indices[idx]*3, normal);
+            }
+
+            if (!normalPerVertex.containsKey(indices[idx + 1]*3)) {
+                normalPerVertex.put(indices[idx + 1]*3, normal);
+            }
+
+            if (!normalPerVertex.containsKey(indices[idx + 2]*3)) {
+                normalPerVertex.put(indices[idx + 2]*3, normal);
+            }
+        }
+
+        // Create the float[]  with all normals for all vertices
+        // It has to be in the same order that is on the vertices[] so from 0 .. to length of vertices/3 because each vertex has three components
+        float[] normals = new float[vertices.length];
+        int idxNormals = 0;
+        for (int idx=0;idx<vertices.length;idx+=3){
+            normals[idxNormals]   = normalPerVertex.get(idx).x;
+            normals[idxNormals+1] = normalPerVertex.get(idx).y;
+            normals[idxNormals+2] = normalPerVertex.get(idx).z;
+            idxNormals+=3;
+        }
+
+        return normals;
+    }
+
     public void createModel(final int maxWidthWallSide, final int maxHeightWallSide, final int floorSize,
                             final Texture frontWallText, final Texture backWallText,
                             final Texture leftWallText, final Texture rightWallText,
@@ -206,6 +260,7 @@ public class Room {
         // Calculate the wall position on world coordinates
         calcWorldPositionFromMapPosition(maxWidthWallSide, maxHeightWallSide, centerX, centerY, centerZ);
 
+        // Create the walls triangles
         Triple<float[],int[],float[]> frontWallData = createFullWall(maxWidthWallSide, maxHeightWallSide, floorSize, stripWidthDim, stripHeightDim,stripFloorDim,
                                                        new Vector3f(0.0f, 0.0f, -centerZ), false);
 
@@ -225,12 +280,59 @@ public class Room {
                 new Vector3f(0.0f, 0.0f, 0.0f), true);
 
 
-        frontWall   = new Mesh(frontWallData.getLeft(), frontWallData.getMiddle(), frontWallData.getRight(), frontWallText);
-        backWall    = new Mesh(backWallData.getLeft(), backWallData.getMiddle(), backWallData.getRight(), backWallText);
-        leftWall    = new Mesh(leftWallData.getLeft(), leftWallData.getMiddle(), leftWallData.getRight(), leftWallText);
-        rightWall   = new Mesh(rightWallData.getLeft(), rightWallData.getMiddle(), rightWallData.getRight(), rightWallText);
-        ceilingWall = new Mesh(ceilingWallData.getLeft(), ceilingWallData.getMiddle(), ceilingWallData.getRight(), ceilingText);
-        floorWall   = new Mesh(floorWallData.getLeft(), floorWallData.getMiddle(), floorWallData.getRight(), floorText);
+        // Calculate Normals
+        float[] frontNormals   =  calculateNormals(frontWallData.getLeft(), frontWallData.getMiddle());
+        float[] backNormals    =  calculateNormals(backWallData.getLeft(), backWallData.getMiddle());
+        float[] leftNormals    =  calculateNormals(leftWallData.getLeft(), leftWallData.getMiddle());
+        float[] rightNormals   =  calculateNormals(rightWallData.getLeft(), rightWallData.getMiddle());
+        float[] ceilingNormals =  calculateNormals(ceilingWallData.getLeft(), ceilingWallData.getMiddle());
+        float[] floorNormals   =  calculateNormals(floorWallData.getLeft(), floorWallData.getMiddle());
+
+        // Create the wall materials
+        Material frontMaterial = new Material(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f),
+                                              new Vector4f(1.0f, 1.0f, 1.0f, 1.0f),
+                                              new Vector4f(1.0f, 1.0f, 1.0f, 1.0f),
+                                              frontWallText, 0.1f);
+        Material backMaterial = new Material(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f),
+                new Vector4f(1.0f, 1.0f, 1.0f, 1.0f),
+                new Vector4f(1.0f, 1.0f, 1.0f, 1.0f),
+                backWallText, 0.6f);
+        Material leftMaterial = new Material(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f),
+                new Vector4f(1.0f, 1.0f, 1.0f, 1.0f),
+                new Vector4f(1.0f, 1.0f, 1.0f, 1.0f),
+                leftWallText, 0.6f);
+        Material rightMaterial = new Material(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f),
+                new Vector4f(1.0f, 1.0f, 1.0f, 1.0f),
+                new Vector4f(1.0f, 1.0f, 1.0f, 1.0f),
+                rightWallText, 0.6f);
+        Material ceilingMaterial = new Material(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f),
+                new Vector4f(1.0f, 1.0f, 1.0f, 1.0f),
+                new Vector4f(1.0f, 1.0f, 1.0f, 1.0f),
+                ceilingText, 0.6f);
+        Material floorMaterial = new Material(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f),
+                new Vector4f(1.0f, 1.0f, 1.0f, 1.0f),
+                new Vector4f(1.0f, 1.0f, 1.0f, 1.0f),
+                floorText, 0.6f);
+
+
+        // Create the walls  Meshes
+        frontWall   = new Mesh(frontWallData.getLeft(), frontWallData.getMiddle(), frontNormals, frontWallData.getRight());
+        frontWall.setMaterial(frontMaterial);
+
+        backWall    = new Mesh(backWallData.getLeft(), backWallData.getMiddle(), backNormals, backWallData.getRight());
+        backWall.setMaterial(backMaterial);
+
+        leftWall    = new Mesh(leftWallData.getLeft(), leftWallData.getMiddle(), leftNormals, leftWallData.getRight());
+        leftWall.setMaterial(leftMaterial);
+
+        rightWall   = new Mesh(rightWallData.getLeft(), rightWallData.getMiddle(), rightNormals, rightWallData.getRight());
+        rightWall.setMaterial(rightMaterial);
+
+        ceilingWall = new Mesh(ceilingWallData.getLeft(), ceilingWallData.getMiddle(), ceilingNormals, ceilingWallData.getRight());
+        ceilingWall.setMaterial(ceilingMaterial);
+
+        floorWall   = new Mesh(floorWallData.getLeft(), floorWallData.getMiddle(), floorNormals, floorWallData.getRight());
+        floorWall.setMaterial(floorMaterial);
 
     }
 
@@ -244,12 +346,34 @@ public class Room {
         floorWall.cleanUp();
     }
 
-    public void render() {
+    // the shader program is expected to have the following uniforms
+    // color
+    // useColor (Y if is not textured)
+    // material
+    public void render(ShaderProgram shaderProgram) {
+
+        //Front Wall
+        shaderProgram.setUniform("material", frontWall.getMaterial());
         frontWall.render();
+
+        //Back Wall
+        shaderProgram.setUniform("material", backWall.getMaterial());
         backWall.render();
+
+        //Left Wall
+        shaderProgram.setUniform("material", leftWall.getMaterial());
         leftWall.render();
+
+        //Right wall
+        shaderProgram.setUniform("material", rightWall.getMaterial());
         rightWall.render();
+
+        //Ceiling wall
+        shaderProgram.setUniform("material", ceilingWall.getMaterial());
         ceilingWall.render();
+
+        //Floor wall
+        shaderProgram.setUniform("material", floorWall.getMaterial());
         floorWall.render();
     }
 

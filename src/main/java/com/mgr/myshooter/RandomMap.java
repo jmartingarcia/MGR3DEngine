@@ -1,7 +1,8 @@
-package com.mgr.engine;
+package com.mgr.myshooter;
+
+import com.mgr.engine.Texture;
 
 import java.util.*;
-//import java.util.stream.Collectors;
 
 public class RandomMap {
 
@@ -73,7 +74,7 @@ public class RandomMap {
 
         final List<Room> result = new ArrayList<>();
 
-        // Read the map plan and generate the actual com.mgr.engine.Room object with it's connections
+        // Read the map plan and generate the actual com.mgr.myshooter.Room object with it's connections
         for (int x=0;x<MAX_CELLS;x++)
             for (int y=0;y<MAX_CELLS;y++){
 
@@ -147,7 +148,7 @@ public class RandomMap {
     }
 
     public List<Room> getRooms() {
-        //for (com.mgr.engine.Room room : rooms)
+        //for (com.mgr.myshooter.Room room : rooms)
         //    room.drawRoom();
         List<Room> result = new ArrayList<>();
         Room room = rooms.get(0);
