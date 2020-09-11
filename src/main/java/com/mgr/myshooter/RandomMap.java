@@ -13,6 +13,9 @@ public class RandomMap {
     private final int CELL_HEIGHT_METERS  = 60;
     private final int CELL_FLOOR_METERS   = 300;
 
+    private  int maxPointLights = 5;
+    private  int maxSpotLights  = 5;
+
     private int[][] mapMatrix = new int[MAX_CELLS][MAX_CELLS];
     private int totalGeneratedRooms = 0;
     private List<Room> rooms;
@@ -24,6 +27,11 @@ public class RandomMap {
         put("E", "W");
         put("W", "E");
     }};*/
+
+    public RandomMap(final int maxPointLights, final int maxSpotLights){
+        this.maxPointLights = maxPointLights;
+        this.maxSpotLights  = maxSpotLights;
+    }
 
     private Integer getRandomIntNumberInRange(final Integer min, final Integer max) {
         final Random random = new Random();
@@ -80,7 +88,7 @@ public class RandomMap {
 
                 int roomIndex = mapMatrix[x][y];
                 if (roomIndex>0){
-                    Room room = new Room(roomIndex, 1.0f);
+                    Room room = new Room(roomIndex, 1.0f, this.maxPointLights, this.maxSpotLights);
                     //Link with room on the West
                     if (x > 0 && mapMatrix[x-1][y] != 0)
                         room.setPathWithRoomIndex("W",mapMatrix[x-1][y]);

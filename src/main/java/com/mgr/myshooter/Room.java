@@ -1,14 +1,8 @@
 package com.mgr.myshooter;
 
-import com.mgr.engine.Material;
-import com.mgr.engine.Mesh;
-import com.mgr.engine.ShaderProgram;
-import com.mgr.engine.Texture;
+import com.mgr.engine.*;
 import org.apache.commons.lang3.tuple.Triple;
-import org.joml.Vector2f;
-import org.joml.Vector3f;
-import org.joml.Vector3i;
-import org.joml.Vector4f;
+import org.joml.*;
 
 import java.util.HashMap;
 import java.util.Vector;
@@ -64,10 +58,12 @@ public class Room {
     private Vector3f worldPosition;  // The position in World Coordinates
 
     public Vector3f getWorldPosition() {
+
         return worldPosition;
     }
 
-
+    private PointLight[] pointLights = null;
+    private SpotLight[]  spotLights   = null;
 
 
     private final HashMap<String, Integer> roomConnections = new HashMap<String, Integer>() {{
@@ -79,10 +75,28 @@ public class Room {
 
 
 
-    public Room(Integer index, float scale){
+    public Room(final Integer index, final float scale, final int maxPointLights, final int maxSpotLights){
 
         this.index = index;
         this.scale = scale;
+
+
+        // Create the lights with no intensity (that's what the shader expects if there is no lights, it needs the objects created)
+        // based on the book, some cards might not like a flag that indicates of objects(light) exists or not. Not sure why yet, need to investigate.
+        // TODO - Research
+        //   * Max lights supported
+        //   * How to manage better the existence of light or not
+        pointLights = new PointLight[maxPointLights];
+        for (int i=0;i<maxPointLights;i++){
+            pointLights[i] = new PointLight(new Vector3f(1.0f,1.0f,1.0f), new Vector3f(0.0f, 0.0f, 0.0f), 0.0f);
+        }
+        spotLights  = new SpotLight[maxSpotLights];
+        for (int i=0;i<maxSpotLights;i++){
+            PointLight pl = new PointLight(new Vector3f(1.0f,1.0f,1.0f), new Vector3f(0.0f, 0.0f, 0.0f), 0.0f);
+            spotLights[i] = new SpotLight(pl, new Vector3f(0.0f, -1.0f, 0.0f), 45.0f);
+        }
+
+
     }
 
     public void setPathWithRoomIndex(String path, Integer roomIndex){
@@ -347,12 +361,65 @@ public class Room {
     }
 
     // the shader program is expected to have the following uniforms
-    // color
-    // useColor (Y if is not textured)
     // material
-    public void render(ShaderProgram shaderProgram) {
+    public void render(ShaderProgram shaderProgram, Matrix4f viewMatrix) {
+
+        PointLight[] currPointLights = new PointLight[pointLights.length];
+        SpotLight[]  currSpotLights  = new SpotLight[spotLights.length];
+
+
+        // Send Point Light data to the shader
+        for (int i=0;i<pointLights.length;i++){
+            // Convert PointLights position into view(camera) coordinates
+            currPointLights[i] = new PointLight(pointLights[i]);
+            Vector3f lightPos = currPointLights[i].getPosition();
+            Vector4f aux = new Vector4f(lightPos, 1);
+            aux.mul(viewMatrix);
+            lightPos.x = aux.x;
+            lightPos.y = aux.y;
+            lightPos.z = aux.z;
+            currPointLights[i].setPosition(lightPos);
+
+        }
+        shaderProgram.setUniform("pointLights", currPointLights);
+
+
+        for (int i=0;i<spotLights.length;i++) {
+            // Get a copy of the spot light object and transform its position and cone direction to view coordinates
+            currSpotLights[i] = new SpotLight(spotLights[i]);
+            Vector4f dir = new Vector4f(currSpotLights[i].getConeDirection(), 0);  // set w = 0 because we don't to translate the cone
+            dir.mul(viewMatrix);
+            currSpotLights[i].setConeDirection(new Vector3f(dir.x, dir.y, dir.z));
+            Vector3f lightPos = currSpotLights[i].getPointLight().getPosition();
+
+            Vector4f aux = new Vector4f(lightPos, 1);
+            aux.mul(viewMatrix);
+            lightPos.x = aux.x;
+            lightPos.y = aux.y;
+            lightPos.z = aux.z;
+            currSpotLights[i].getPointLight().setPosition(lightPos);
+        }
+        shaderProgram.setUniform("spotLights", currSpotLights);
+
+
+        // Send Spot Light data to the shader
+        for (int i=0;i<spotLights.length;i++){
+            // Convert SpotLights rotation into view(camera) coordinates. We don't
+            currPointLights[i] = new PointLight(pointLights[i]);
+            Vector3f lightPos = currPointLights[i].getPosition();
+            Vector4f aux = new Vector4f(lightPos, 1);
+            aux.mul(viewMatrix);
+            lightPos.x = aux.x;
+            lightPos.y = aux.y;
+            lightPos.z = aux.z;
+            currPointLights[i].setPosition(lightPos);
+
+        }
+        shaderProgram.setUniform("pointLights", currPointLights);
+
 
         //Front Wall
+        // Send texture to the shader
         shaderProgram.setUniform("material", frontWall.getMaterial());
         frontWall.render();
 

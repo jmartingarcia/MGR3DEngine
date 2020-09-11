@@ -74,15 +74,16 @@ public class Mesh {
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesBuffer, GL_STATIC_DRAW);
 
             // Normals VBO
-            int normalVboId = glGenBuffers();
-            vboIdList.add(normalVboId);
-            normalsBuffer = MemoryUtil.memAllocFloat(normals.length);
-            normalsBuffer.put(normals).flip();
-            glBindBuffer(GL_ARRAY_BUFFER, normalVboId);
-            glBufferData(GL_ARRAY_BUFFER, normalsBuffer, GL_STATIC_DRAW);
-            glEnableVertexAttribArray(2);
-            glVertexAttribPointer(2, 3, GL_FLOAT, false, 0, 0);
-
+            if (normals.length > 0) {
+                int normalVboId = glGenBuffers();
+                vboIdList.add(normalVboId);
+                normalsBuffer = MemoryUtil.memAllocFloat(normals.length);
+                normalsBuffer.put(normals).flip();
+                glBindBuffer(GL_ARRAY_BUFFER, normalVboId);
+                glBufferData(GL_ARRAY_BUFFER, normalsBuffer, GL_STATIC_DRAW);
+                glEnableVertexAttribArray(2);
+                glVertexAttribPointer(2, 3, GL_FLOAT, false, 0, 0);
+            }
 
             // Texture coordinates VBO
             if (textCoords.length > 0) {
@@ -163,22 +164,40 @@ public class Mesh {
         glBindVertexArray(0);
         glDeleteVertexArrays(vaoId);
 
-        material.cleanup();
+        material.cleanUp();
+    }
+
+    public void cleanUp(boolean cleanMaterial) {
+        glDisableVertexAttribArray(0);
+
+        // Delete the VBOs
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+        for (Integer vbId : vboIdList) {
+            glDeleteBuffers(vbId);
+        }
+
+        // Delete the VAO
+        glBindVertexArray(0);
+        glDeleteVertexArrays(vaoId);
+
+        if (cleanMaterial) material.cleanUp();
     }
 
     public void render() {
         Texture texture = material.getTexture();
         if (material.isTextured()) {
-            // Activate firs texture bank
+            // Activate first texture bank
             glActiveTexture(GL_TEXTURE0);
             // Bind the texture
             glBindTexture(GL_TEXTURE_2D, texture.getId());
         }
 
         glBindVertexArray(vaoId);
-        glEnableVertexAttribArray(0);
+        //glEnableVertexAttribArray(0);
         glDrawElements(GL43.GL_TRIANGLES, vertexCount, GL43.GL_UNSIGNED_INT, 0);
-        glDisableVertexAttribArray(0);
+        //glDisableVertexAttribArray(0);
         glBindVertexArray(0);
+        glBindTexture(GL_TEXTURE_2D, 0);
     }
 }

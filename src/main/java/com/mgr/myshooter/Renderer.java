@@ -12,6 +12,8 @@ public class Renderer {
 
     private ShaderProgram shaderProgram;
 
+    private ShaderProgram profilerProgram;
+
     private World world;
 
     // Field of view in radians
@@ -25,6 +27,8 @@ public class Renderer {
     private final Transformation transformation;
 
     private final float specularPower = 1.0f;
+
+    private Profiler profiler;
 
 
     public Renderer() {
@@ -42,42 +46,60 @@ public class Renderer {
         this.world = world;
     }
 
-    public void init(Window window, Profiler profiler) throws Exception {
+    public void init(Window window, Profiler profiler, World world) throws Exception {
+
+        this.world = world;
+        this.world.init();
+
+        this.profiler = profiler;
+
+        projectionMatrix =  transformation.getProjectionMatrix(FOV, (float) window.getWidth(),  (float)window.getHeight(),  Z_NEAR, Z_FAR);
+
+        setupSceneShader();
+        setupProfilerShader();
+    }
+
+    public void setupSceneShader() throws Exception {
+
         shaderProgram = new ShaderProgram();
         shaderProgram.createVertexShader(Utils.loadResource("/vertex.vs"));
         shaderProgram.createFragmentShader(Utils.loadResource("/fragment.fs"));
         shaderProgram.link();
-
-        projectionMatrix =  transformation.getProjectionMatrix(FOV, (float) window.getWidth(),  (float)window.getHeight(),  Z_NEAR, Z_FAR);
 
         shaderProgram.createUniform("projectionMatrix");
         shaderProgram.createUniform("modelViewMatrix");
         shaderProgram.createUniform("texture_sampler");
         shaderProgram.createUniform("specularPower");
         shaderProgram.createUniform("ambientLight");
-        shaderProgram.createPointLightUniform("pointLight");
         shaderProgram.createMaterialUniform("material");
         shaderProgram.createDirectionalLightUniform("directionalLight");
+        shaderProgram.createPointLightListUniform("pointLights",world.getMAX_POINT_LIGHTS());
+        shaderProgram.createSpotLightListUniform("spotLights",world.getMAX_SPOT_LIGHTS());
 
-        // Create uniform for default colour and the flag that controls it
-        //shaderProgram.createUniform("color");
-        //shaderProgram.createUniform("useColor");
     }
 
+    public void setupProfilerShader() throws Exception {
 
+        profilerProgram = new ShaderProgram();
+        profilerProgram.createVertexShader(Utils.loadResource("/profiler_vertex.vs"));
+        profilerProgram.createFragmentShader(Utils.loadResource("/profiler_fragment.fs"));
+        profilerProgram.link();
+
+        // Create uniforms for Ortographic-model projection matrix and base color
+        profilerProgram.createUniform("projModelMatrix");
+        profilerProgram.createUniform("color");
+        profilerProgram.createUniform("texture_sampler");
+
+    }
 
     public void clear() {
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
-    public void render(final Camera camera, final Window window) {
+    public void render(final Camera camera, final Window window, final boolean showProfilerData) {
 
         clear();
-
-        Vector3f ambientLight = new Vector3f(1.0f,1.0f,1.0f);
-        PointLight pointLight  = new PointLight(new Vector3f(1.0f,1.0f, 1.0f), new Vector3f(0.0f,5.0f, 0.0f), 0.5f);
-
 
         if (window.isResized()) {
             glViewport(0, 0, window.getWidth(), window.getHeight());
@@ -85,10 +107,23 @@ public class Renderer {
             projectionMatrix =  transformation.getProjectionMatrix(FOV, (float) window.getWidth(),  (float)window.getHeight(),  Z_NEAR, Z_FAR);
         }
 
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_FRONT);
+        //glEnable(GL_CULL_FACE);
+        //glCullFace(GL_FRONT);
         glFrontFace(GL_CCW);
         //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+
+        renderScene(camera, window);
+
+        // Finally show debugging data on screen if enabled
+        if (showProfilerData) {
+            renderProfiler(window);
+        }
+
+    }
+
+    private void renderScene(final Camera camera, final Window window) {
+
+        Vector3f ambientLight = new Vector3f(1.0f,1.0f,1.0f);
 
         shaderProgram.bind();
 
@@ -102,15 +137,6 @@ public class Renderer {
         shaderProgram.setUniform("ambientLight", ambientLight);
         shaderProgram.setUniform("specularPower", specularPower);
 
-        // Get a copy of the point light object and transform its position to view coordinates
-        PointLight currPointLight = new PointLight(pointLight);
-        Vector3f lightPos = currPointLight.getPosition();
-        Vector4f aux = new Vector4f(lightPos, 1);
-        aux.mul(viewMatrix);
-        lightPos.x = aux.x;
-        lightPos.y = aux.y;
-        lightPos.z = aux.z;
-        shaderProgram.setUniform("pointLight", currPointLight);
 
         // Get position of the sun on the world and set it as a directional light
         DirectionalLight currDirLight = new DirectionalLight(world.getSunLight());
@@ -128,15 +154,39 @@ public class Renderer {
 
             shaderProgram.setUniform("modelViewMatrix", modelViewMatrix);
 
-            room.render(shaderProgram);
+            room.render(shaderProgram, viewMatrix);
         }
 
         shaderProgram.unbind();
     }
 
+    private void renderProfiler(final Window window) {
+        profilerProgram.bind();
+
+        profilerProgram.setUniform("texture_sampler", 0);
+
+        Matrix4f ortho = transformation.getOrthoProjectionMatrix(0, (float)window.getWidth(), (float)window.getHeight(), 0);
+
+        for (TextItem textItem : profiler.getTextItems()) {
+            Mesh mesh = textItem.getMesh();
+            // Set orthographic and model matrix for this text item
+            Matrix4f projModelMatrix = transformation.getOrtoProjModelMatrix(textItem, ortho);
+            profilerProgram.setUniform("projModelMatrix", projModelMatrix);
+            profilerProgram.setUniform("color", textItem.getMesh().getMaterial().getAmbientColor());
+
+            // Render the mesh for this HUD item
+            mesh.render();
+        }
+
+        profilerProgram.unbind();
+    }
+
     public void cleanUp() {
         if (shaderProgram != null) {
             shaderProgram.cleanup();
+        }
+        if (profilerProgram != null) {
+            profilerProgram.cleanup();
         }
     }
 }

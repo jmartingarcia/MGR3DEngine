@@ -31,18 +31,15 @@ public class MGRGame implements IGameLogic {
 
 
     public MGRGame() {
-
-        renderer = new Renderer();
         world    = new World();
+        renderer = new Renderer();
         player   = new Player();
         profiler = new Profiler();
     }
     
     @Override
     public void init(Window window) throws Exception {
-        renderer.init(window, profiler);
-        world.init();
-        renderer.setWorld(world);
+        renderer.init(window, profiler, world);
         player.setPosition(new Vector3f(0.0f, 20.0f, 0.0f));
         profiler.Init();
     }
@@ -103,7 +100,12 @@ public class MGRGame implements IGameLogic {
 
         window.setClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
-        renderer.render(player.getCamera(), window);
+        //Send info to the profiler
+        String text = "( X: " + player.getPosition().x + " , Y: " + player.getPosition().y + " , Z: " + player.getPosition().z + " , RX: " +
+                  player.getRotation().x + " , RY: " + player.getRotation().y + " , RZ: " + player.getRotation().z + " )";
+        profiler.setProfilerEntry("CAMERA", text);
+
+        renderer.render(player.getCamera(), window, showProfilerData);
     }
 
     @Override
@@ -113,8 +115,6 @@ public class MGRGame implements IGameLogic {
     }
 
     private void printProfileData() {
-        String text = "( X: " + player.getPosition().x + " , Y: " + player.getPosition().y + " , Z: " + player.getPosition().z + ")";
-        profiler.setProfilerEntry("CAMERA", text);
-        profiler.displayProfileData();
+        showProfilerData = !showProfilerData;
     }
 }

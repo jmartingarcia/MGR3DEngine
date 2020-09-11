@@ -10,12 +10,21 @@ import java.util.List;
 public class World {
 
     private final Integer MAX_NUMBER_ROOMS = 5;
+
+    // The shader only have space for 5 lights of each type (point light and sport light)
+    // This limit is just by the code (constants), actually hardware might support much more.
+    // Each room can decide to create some lights
+    // I'm thinking when the player is not on the room, the lights will be off
+    private final int MAX_POINT_LIGHTS = 5;
+    private final int MAX_SPOT_LIGHTS  = 5;
+
+
     private RandomMap map;
     private DirectionalLight sun;
     private int time; //In minutes: from 0 to 1440, where 720 is noon
 
     public World(){
-        map = new RandomMap();
+        map = new RandomMap(MAX_POINT_LIGHTS, MAX_SPOT_LIGHTS);
 
         //Assume time starts as noon, the sun is right on top of us
         sun  = new DirectionalLight(new Vector3f(1.0f, 1.0f, 1.0f), new Vector3f(0.0f, -1.0f, 0.0f), 0.5f);
@@ -54,6 +63,14 @@ public class World {
         return sun;
     }
 
+    public int getMAX_POINT_LIGHTS() {
+        return MAX_POINT_LIGHTS;
+    }
+
+    public int getMAX_SPOT_LIGHTS() {
+        return MAX_SPOT_LIGHTS;
+    }
+    
     // Based on time calculates the position of the sun and color of the light
     private void calcSunPositionAndLightColor() {
         // When noon will be 0 degrees, when 6 am will be -90 and 6 pm 90

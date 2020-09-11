@@ -1,5 +1,9 @@
 #version 330
 
+const int MAX_POINT_LIGHTS = 5;
+const int MAX_SPOT_LIGHTS = 5;
+
+
 in vec2 outTexCoord;
 in vec3 mvVertexNormal;
 in vec3 mvVertexPos;
@@ -22,6 +26,13 @@ struct PointLight
     Attenuation att;
 };
 
+struct SpotLight
+{
+    PointLight pl;
+    vec3 conedir;
+    float cutoff;
+};
+
 struct DirectionalLight
 {
     vec3 color;
@@ -42,8 +53,10 @@ uniform sampler2D texture_sampler;
 uniform vec3 ambientLight;
 uniform float specularPower;
 uniform Material material;
-uniform PointLight pointLight;
 uniform DirectionalLight directionalLight;
+
+uniform PointLight pointLights[MAX_POINT_LIGHTS];
+uniform SpotLight spotLights[MAX_SPOT_LIGHTS];
 
 vec4 ambientC;
 vec4 diffuseC;
@@ -102,6 +115,25 @@ vec4 calcPointLight(PointLight light, vec3 position, vec3 normal)
     return (diffusecolor + speccolor) / attenuationInv;
 }
 
+vec4 calcSpotLight(SpotLight light, vec3 position, vec3 normal)
+{
+    vec3 light_direction = light.pl.position - position;
+    vec3 to_light_dir  = normalize(light_direction);
+    vec3 from_light_dir  = -to_light_dir;
+    float spot_alfa = dot(from_light_dir, normalize(light.conedir));
+
+    vec4 color = vec4(0, 0, 0, 0);
+
+    if ( spot_alfa > light.cutoff )
+    {
+        color = calcPointLight(light.pl, position, normal);
+        // a spotlight is basically a point light but with a cutoff and attenuation
+        // here we apply attenuation based on the cutoff angle
+        color *= (1.0 - (1.0 - spot_alfa)/(1.0 - light.cutoff));
+    }
+    return color;
+}
+
 vec4 calcDirectionalLight(DirectionalLight light, vec3 position, vec3 normal) {
     return calcLightColor(light.color, light.intensity, position, normalize(light.direction), normal);
 }
@@ -111,6 +143,15 @@ void main()
     setupcolors(material, outTexCoord);
 
     vec4 diffuseSpecularComp = calcDirectionalLight(directionalLight, mvVertexPos, mvVertexNormal);
-    diffuseSpecularComp += calcPointLight(pointLight, mvVertexPos, mvVertexNormal);
+
+    for (int i=0; i<MAX_POINT_LIGHTS; i++)
+      if ( pointLights[i].intensity > 0 )
+         diffuseSpecularComp += calcPointLight(pointLights[i], mvVertexPos, mvVertexNormal);
+
+    for (int i=0; i<MAX_SPOT_LIGHTS; i++)
+      if ( spotLights[i].pl.intensity > 0 )
+         diffuseSpecularComp += calcSpotLight(spotLights[i], mvVertexPos, mvVertexNormal);
+
+
     fragColor = ambientC * vec4(ambientLight, 1) + diffuseSpecularComp;
 }

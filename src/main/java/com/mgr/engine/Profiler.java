@@ -1,42 +1,44 @@
 package com.mgr.engine;
 
 
-import org.lwjgl.opengl.GL43;
-import org.lwjgl.stb.STBEasyFont;
-import org.lwjgl.system.MemoryUtil;
-
-import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL15.GL_STATIC_DRAW;
-import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL30.*;
-import static org.lwjgl.stb.STBEasyFont.*;
 
 public class Profiler {
 
 
-    private final Map<String, String> profilerInfo = new HashMap<>();;
+    private final Map<String, TextItem> profilerInfo = new HashMap<>();;
 
 
     public void Init(){
     }
 
+    public List<TextItem> getTextItems() {
+        return new ArrayList<TextItem>(profilerInfo.values());
+    }
+
     public void displayProfileData() {
         for (String key : profilerInfo.keySet()) {
-            System.out.println(key + " : " + profilerInfo.get(key));
+           System.out.println(key + " : " + profilerInfo.get(key));
         }
     }
 
     public void setProfilerEntry(String key, String value) {
          if (profilerInfo.containsKey(key)) {
-            String oldValue = profilerInfo.get(key);
-            profilerInfo.replace(key, oldValue, value);
+            TextItem item = profilerInfo.get(key);
+            item.setText(value);
         } else {
-            profilerInfo.put(key, value);
+             try {
+                 TextItem item = new TextItem(value, "/Users/mgarciar/Documents/Personal/Workspace/MGR3DEngine/build/resources/main/font_texture.png", 16, 16);
+                 profilerInfo.put(key, item);
+                 //Set position of text on screen
+                 float posy = (profilerInfo.values().size())*10.0f;
+                 item.setPosition(0.0f, posy, 0);
+             } catch (Exception ex){
+               System.out.println("Could not set profile entry with key " + key + ". Error = " + ex.getMessage());
+             }
         }
     }
 

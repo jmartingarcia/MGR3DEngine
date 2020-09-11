@@ -19,6 +19,7 @@ public class TextItem extends GameItem {
         this.numRows = numRows;
         Texture texture = new Texture(fontFileName);
         this.setMesh(buildMesh(texture, numCols, numRows));
+        setScale(0.3f);
     }
 
     private Mesh buildMesh(Texture texture, int numCols, int numRows) {
@@ -26,10 +27,9 @@ public class TextItem extends GameItem {
         byte[] chars = text.getBytes(ISO_8859_1);
         int numChars = chars.length;
 
-        List<Float> positions = new ArrayList();
-        List<Float> textCoords = new ArrayList();
-        //float[] normals = new float[0];
-        List<Integer> indices = new ArrayList();
+        List<Float> positions = new ArrayList<>();
+        List<Float> textCoords = new ArrayList<>();
+        List<Integer> indices = new ArrayList<>();
 
         float tileWidth = (float) texture.getWidth() / (float) numCols;
         float tileHeight = (float) texture.getHeight() / (float) numRows;
@@ -37,7 +37,8 @@ public class TextItem extends GameItem {
         for (int i = 0; i < numChars; i++) {
             byte currChar = chars[i];
             int col = currChar % numCols;
-            int row = (currChar / numCols) - 2;
+            //int row = (currChar / numCols) - 2;
+            int row = (currChar / numCols);
 
             //Left top vertex
             positions.add((float) i * tileWidth); //X
@@ -56,7 +57,7 @@ public class TextItem extends GameItem {
             indices.add( i * VERTICES_PER_QUAD + 1);
 
             // Right Bottom vertex
-            positions.add((float) (i + 1) * tileWidth); //X
+            positions.add((float) i * tileWidth + tileWidth); //X
             positions.add(tileHeight);//Y
             positions.add(ZPOS);
             textCoords.add((float)(col + 1)/(float)numCols);
@@ -64,7 +65,7 @@ public class TextItem extends GameItem {
             indices.add( i * VERTICES_PER_QUAD + 2);
 
             // Right Top vertex
-            positions.add((float) (i + 1) * tileWidth); //X
+            positions.add((float) i * tileWidth + tileWidth); //X
             positions.add(0.0f);//Y
             positions.add(ZPOS);
             textCoords.add((float)(col + 1)/(float)numCols);
@@ -72,21 +73,28 @@ public class TextItem extends GameItem {
             indices.add( i * VERTICES_PER_QUAD + 3);
 
             indices.add( i * VERTICES_PER_QUAD );
-            indices.add( i * VERTICES_PER_QUAD + 3);
+            indices.add( i * VERTICES_PER_QUAD + 2);
 
         }
 
-        return null;
+        float[] posArr        = Utils.listToArray(positions);
+        float[] textCoordsArr = Utils.listToArray(textCoords);
+        int[] indicesArr      = indices.stream().mapToInt(i->i).toArray();
+        Mesh mesh             = new Mesh(posArr, indicesArr, new float[0], textCoordsArr); // We don't need normals for the text
+        mesh.setMaterial(new Material(texture));
+
+        return mesh;
     }
 
     public String getText() {
+
         return text;
     }
 
     public void setText(String text) {
         this.text = text;
-        //Texture texture = this.getMesh().getMaterial().getTexture();
-        //this.getMesh().deleteBuffers();
-        //this.setMesh(buildMesh(texture, numCols, numRows));
+        Texture texture = this.getMesh().getMaterial().getTexture();
+        this.getMesh().cleanUp(false);
+        this.setMesh(buildMesh(texture, numCols, numRows));
     }
 }

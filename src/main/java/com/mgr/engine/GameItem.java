@@ -12,10 +12,14 @@ public class GameItem {
 
     private final Vector3f rotation;
 
+
     public GameItem() {
         position = new Vector3f();
         scale = 1;
         rotation = new Vector3f();
+        rotation.x = 0.0f;
+        rotation.y = 0.0f;
+        rotation.z = 0.0f;
     }
     
     public GameItem(Mesh mesh) {
@@ -24,6 +28,7 @@ public class GameItem {
     }
 
     public Vector3f getPosition() {
+
         return position;
     }
 
@@ -62,5 +67,13 @@ public class GameItem {
     public void setMesh(Mesh mesh) {
 
         this.mesh = mesh;
+    }
+
+    public void render() {
+        mesh.render();
+    }
+
+    public void cleanUp() {
+        mesh.cleanUp();
     }
 }

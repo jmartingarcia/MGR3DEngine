@@ -95,7 +95,8 @@ public class Material {
         this.texture = texture;
     }
 
-    public void cleanup() {
+    public void cleanUp() {
+
         if (isTextured()) texture.cleanup();
     }
 
