@@ -1,6 +1,7 @@
 package com.mgr.myshooter;
 
 import com.mgr.engine.Texture;
+import org.joml.Vector3f;
 
 import java.util.*;
 
@@ -102,13 +103,17 @@ public class RandomMap {
                     if (y < MAX_CELLS-1 && mapMatrix[x][y+1] != 0)
                         room.setPathWithRoomIndex("S",mapMatrix[x][y+1]);
 
-                    room.setMapPosition(x,y);
+                    room.setWorldPosition(calcRoomWorldPosition(x, y));
                     result.add(room);
                 }
 
             }
 
         return result;
+    }
+
+    private Vector3f calcRoomWorldPosition(final int x, final int y) {
+        return null;
     }
 
     public void generateRandomMap(Integer totalNumberRooms) {

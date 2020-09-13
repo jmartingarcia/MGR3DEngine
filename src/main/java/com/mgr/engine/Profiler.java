@@ -34,7 +34,7 @@ public class Profiler {
                  TextItem item = new TextItem(value, "/Users/mgarciar/Documents/Personal/Workspace/MGR3DEngine/build/resources/main/font_texture.png", 16, 16);
                  profilerInfo.put(key, item);
                  //Set position of text on screen
-                 float posy = (profilerInfo.values().size())*10.0f;
+                 float posy = (profilerInfo.values().size())*30.0f;
                  item.setPosition(0.0f, posy, 0);
              } catch (Exception ex){
                System.out.println("Could not set profile entry with key " + key + ". Error = " + ex.getMessage());

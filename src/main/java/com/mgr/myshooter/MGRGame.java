@@ -101,9 +101,14 @@ public class MGRGame implements IGameLogic {
         window.setClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
         //Send info to the profiler
-        String text = "( X: " + player.getPosition().x + " , Y: " + player.getPosition().y + " , Z: " + player.getPosition().z + " , RX: " +
-                  player.getRotation().x + " , RY: " + player.getRotation().y + " , RZ: " + player.getRotation().z + " )";
-        profiler.setProfilerEntry("CAMERA", text);
+        if (showProfilerData) {
+            String text = "( X: " + player.getPosition().x + " , Y: " + player.getPosition().y + " , Z: " + player.getPosition().z + " , RX: " +
+                    player.getRotation().x + " , RY: " + player.getRotation().y + " , RZ: " + player.getRotation().z + " )";
+            profiler.setProfilerEntry("CAMERA", text);
+
+            text = "Number of rooms: " + world.getNumberOfRooms();
+            profiler.setProfilerEntry("NUM_ROOMS", text);
+        }
 
         renderer.render(player.getCamera(), window, showProfilerData);
     }

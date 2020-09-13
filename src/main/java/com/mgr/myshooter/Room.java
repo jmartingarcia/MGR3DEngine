@@ -5,7 +5,6 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.joml.*;
 
 import java.util.HashMap;
-import java.util.Vector;
 
 public class Room {
 
@@ -34,14 +33,6 @@ public class Room {
     }
 
 
-    private Vector2f mapPosition;  // Contains the position of the room on the map grid
-
-    public void setMapPosition(int posX, int posY) {
-
-        mapPosition = new Vector2f(posX, posY);
-    }
-
-
     private float scale;
 
     public float getScale() {
@@ -55,7 +46,12 @@ public class Room {
     }
 
 
-    private Vector3f worldPosition;  // The position in World Coordinates
+    private Vector3f worldPosition;  // The center position in World Coordinates
+
+    public void setWorldPosition(Vector3f worldPosition) {
+
+        this.worldPosition = new Vector3f(worldPosition.x, worldPosition.y, worldPosition.z);
+    }
 
     public Vector3f getWorldPosition() {
 
@@ -104,18 +100,6 @@ public class Room {
         roomConnections.replace(path, roomIndex);
     }
 
-    private void calcWorldPositionFromMapPosition(final int maxWidthWallSide, final int maxHeightWallSide, final int centerX, final int centerY, final int centerZ) {
-
-        if (mapPosition == null) {
-            throw new NullPointerException("Map Position value not set");
-        }
-
-        // The room are squares (for now)
-        // The map position is a vector2f with x and y field but the y represents the z coordinate.
-        // For now, rooms are flat at 0.0f on Y
-        //worldPosition = new Vector3f(centerX + (mapPosition.x * maxWallSide), centerY, centerZ + (mapPosition.y * maxWallSide));
-        worldPosition = new Vector3f(0.0f, 0.0f, -5.0f);
-    }
 
     // Returns vertices and indices that create a full wall
     private Triple<float[],int[], float[]> createFullWall(final int maxWidthWallSide, final int maxHeightWallSide,
@@ -271,8 +255,6 @@ public class Room {
         final int centerY        = maxHeightWallSide/2;
         final int centerZ        = floorSize/2;
 
-        // Calculate the wall position on world coordinates
-        calcWorldPositionFromMapPosition(maxWidthWallSide, maxHeightWallSide, centerX, centerY, centerZ);
 
         // Create the walls triangles
         Triple<float[],int[],float[]> frontWallData = createFullWall(maxWidthWallSide, maxHeightWallSide, floorSize, stripWidthDim, stripHeightDim,stripFloorDim,

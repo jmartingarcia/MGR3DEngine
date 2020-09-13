@@ -89,4 +89,8 @@ public class World {
         double angRad = Math.toRadians(lightAngle);
         sun.setDirection(new Vector3f((float) Math.sin(angRad),(float) Math.cos(angRad),sun.getDirection().z));
     }
+
+    public int getNumberOfRooms(){
+        return map.getRooms().size();
+    }
 }
