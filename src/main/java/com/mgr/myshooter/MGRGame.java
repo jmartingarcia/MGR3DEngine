@@ -1,5 +1,6 @@
 package com.mgr.myshooter;
 
+import com.mgr.configuration.PropertiesLoader;
 import com.mgr.engine.IGameLogic;
 import com.mgr.engine.Window;
 import com.mgr.engine.*;
@@ -7,7 +8,7 @@ import org.joml.Vector3f;
 
 import static org.lwjgl.glfw.GLFW.*;
 
-public class MGRGame implements IGameLogic {
+public class MGRGame implements IGameLogic, IKeyListener {
 
     private int direction_x,
                 direction_y,
@@ -27,21 +28,26 @@ public class MGRGame implements IGameLogic {
 
     private Profiler profiler;
 
+    private PropertiesLoader properties;
+
     private float elapsedTime = 0.0f;
 
 
     public MGRGame() {
-        world    = new World();
-        renderer = new Renderer();
-        player   = new Player();
-        profiler = new Profiler();
+        properties = new PropertiesLoader();
+        world      = new World(properties);
+        renderer   = new Renderer();
+        player     = new Player();
+        profiler   = new Profiler();
     }
     
     @Override
     public void init(Window window) throws Exception {
+        properties.init();
         renderer.init(window, profiler, world);
         player.setPosition(new Vector3f(0.0f, 20.0f, 0.0f));
-        profiler.Init();
+        profiler.init(properties);
+        window.setKeyListener(this);
     }
     
     @Override
@@ -69,8 +75,6 @@ public class MGRGame implements IGameLogic {
             rotation_y = 1;
         } else if ( window.isKeyPressed(GLFW_KEY_LEFT) ) {
             rotation_y = -1;
-        } else if ( window.isKeyPressed(GLFW_KEY_T)) {
-            printProfileData();
         } else if ( window.isKeyPressed(GLFW_KEY_N)) { // Add 1 hour
             world.addTime(60);
         } else if ( window.isKeyPressed(GLFW_KEY_N)) { // Goes back 1 hour
@@ -122,4 +126,17 @@ public class MGRGame implements IGameLogic {
     private void printProfileData() {
         showProfilerData = !showProfilerData;
     }
+
+    @Override
+    public void keyPressed(int keyCode) {
+
+    }
+
+    @Override
+    public void keyReleased(int keyCode) {
+        if (keyCode == GLFW_KEY_T) {
+            printProfileData();
+        }
+    }
+
 }

@@ -4,6 +4,8 @@ import static org.lwjgl.glfw.GLFW.*;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.opengl.GL;
+
+
 import static org.lwjgl.opengl.GL11.GL_FALSE;
 import static org.lwjgl.opengl.GL11.GL_TRUE;
 import static org.lwjgl.opengl.GL11.glClearColor;
@@ -22,6 +24,9 @@ public class Window {
     private boolean resized;
 
     private boolean vSync;
+
+    private IKeyListener keyListener;
+
 
     public Window(String title, int width, int height, boolean vSync) {
         this.title = title;
@@ -66,6 +71,8 @@ public class Window {
         glfwSetKeyCallback(windowHandle, (window, key, scancode, action, mods) -> {
             if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE) {
                 glfwSetWindowShouldClose(window, true); // We will detect this in the rendering loop
+            } else if (action == GLFW_RELEASE) {
+                sendMessageKeyReleased(key);
             }
         });
 
@@ -148,5 +155,15 @@ public class Window {
     public void update() {
         glfwSwapBuffers(windowHandle);
         glfwPollEvents();
+    }
+
+    public void setKeyListener(IKeyListener listener){
+        keyListener = listener;
+    }
+
+    public void sendMessageKeyReleased(int keyCode) {
+        if (keyListener != null){
+            keyListener.keyReleased(keyCode);
+        }
     }
 }

@@ -6,7 +6,22 @@ group 'org.mgr'
 version '1.0-SNAPSHOT'
 
 project.ext.lwjglVersion = "3.2.3"
-project.ext.lwjglNatives = "natives-macos"
+
+
+import org.gradle.internal.os.OperatingSystem
+//project.ext.lwjglNatives = "natives-macos"
+switch ( OperatingSystem.current() ) {
+    case OperatingSystem.WINDOWS:
+        project.ext.lwjglNatives = "natives-windows"
+        break
+    case OperatingSystem.LINUX:
+        project.ext.lwjglNatives = "natives-linux"
+        break
+    case OperatingSystem.MAC_OS:
+        project.ext.lwjglNatives = "natives-macos"
+        break
+}
+
 project.ext.jomlVersion = "1.9.9"
 
 
@@ -98,7 +113,7 @@ dependencies {
     runtimeOnly "org.lwjgl:lwjgl-tinyfd::$lwjglNatives"
     runtimeOnly "org.lwjgl:lwjgl-tootle::$lwjglNatives"
     runtimeOnly "org.lwjgl:lwjgl-vma::$lwjglNatives"
-    runtimeOnly "org.lwjgl:lwjgl-vulkan::$lwjglNatives"
+    //runtimeOnly "org.lwjgl:lwjgl-vulkan::$lwjglNatives"
     runtimeOnly "org.lwjgl:lwjgl-xxhash::$lwjglNatives"
     runtimeOnly "org.lwjgl:lwjgl-yoga::$lwjglNatives"
     runtimeOnly "org.lwjgl:lwjgl-zstd::$lwjglNatives"

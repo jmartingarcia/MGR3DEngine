@@ -1,5 +1,6 @@
 package com.mgr.myshooter;
 
+import com.mgr.configuration.PropertiesLoader;
 import com.mgr.engine.Texture;
 import org.joml.Vector3f;
 
@@ -20,6 +21,7 @@ public class RandomMap {
     private int[][] mapMatrix = new int[MAX_CELLS][MAX_CELLS];
     private int totalGeneratedRooms = 0;
     private List<Room> rooms;
+    private PropertiesLoader props;
 
     /*private final List<String> roomTypes = Arrays.asList("NSWE","NSW","NSE","NS","WE","W","E","N","S","SE","SW","NW","NE");
     private final Map<String, String> directionOpposites = new HashMap<String, String>() {{
@@ -29,9 +31,10 @@ public class RandomMap {
         put("W", "E");
     }};*/
 
-    public RandomMap(final int maxPointLights, final int maxSpotLights){
+    public RandomMap(final int maxPointLights, final int maxSpotLights, final PropertiesLoader props){
         this.maxPointLights = maxPointLights;
         this.maxSpotLights  = maxSpotLights;
+        this.props = props;
     }
 
     private Integer getRandomIntNumberInRange(final Integer min, final Integer max) {
@@ -113,7 +116,7 @@ public class RandomMap {
     }
 
     private Vector3f calcRoomWorldPosition(final int x, final int y) {
-        return null;
+        return new Vector3f(0.0f,0.0f,0.0f);
     }
 
     public void generateRandomMap(Integer totalNumberRooms) {
@@ -126,19 +129,19 @@ public class RandomMap {
                 ceilingTexture = null;
 
         try {
-            wallTexture = new Texture("/Users/mgarciar/Documents/Personal/Workspace/MGR3DEngine/build/resources/main/textures/panel1/panel1_Base_Color.jpg");
+            wallTexture = new Texture(this.props.getBaseTexturesFolder() + "\\panel1\\panel1_Base_Color.jpg");
         } catch (Exception ex) {
             System.out.println("Could not load wall textures: " + ex.getMessage());
         }
 
         try {
-            floorTexture = new Texture("/Users/mgarciar/Documents/Personal/Workspace/MGR3DEngine/build/resources/main/textures/panel4/panel4_Base_Color.jpg");
+            floorTexture = new Texture(this.props.getBaseTexturesFolder() + "\\panel4\\panel4_Base_Color.jpg");
         } catch (Exception ex) {
             System.out.println("Could not load floor textures: " + ex.getMessage());
         }
 
         try {
-            ceilingTexture = new Texture("/Users/mgarciar/Documents/Personal/Workspace/MGR3DEngine/build/resources/main/textures/panel6/panel6_Base_Color.jpg");
+            ceilingTexture = new Texture(this.props.getBaseTexturesFolder() + "\\panel6\\panel6_Base_Color.jpg");
         } catch (Exception ex) {
             System.out.println("Could not load ceiling textures: " + ex.getMessage());
         }

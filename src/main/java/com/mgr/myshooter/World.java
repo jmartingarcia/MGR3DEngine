@@ -1,5 +1,6 @@
 package com.mgr.myshooter;
 
+import com.mgr.configuration.PropertiesLoader;
 import com.mgr.engine.DirectionalLight;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -23,8 +24,8 @@ public class World {
     private DirectionalLight sun;
     private int time; //In minutes: from 0 to 1440, where 720 is noon
 
-    public World(){
-        map = new RandomMap(MAX_POINT_LIGHTS, MAX_SPOT_LIGHTS);
+    public World(PropertiesLoader props){
+        map = new RandomMap(MAX_POINT_LIGHTS, MAX_SPOT_LIGHTS, props);
 
         //Assume time starts as noon, the sun is right on top of us
         sun  = new DirectionalLight(new Vector3f(1.0f, 1.0f, 1.0f), new Vector3f(0.0f, -1.0f, 0.0f), 0.5f);

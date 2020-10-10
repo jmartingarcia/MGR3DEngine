@@ -12,7 +12,7 @@ public class Main {
         try {
             boolean vSync = true;
             IGameLogic gameLogic = new MGRGame();
-            GameEngine gameEng = new GameEngine("MGR GAME", 1024, 768, vSync, gameLogic);
+            GameEngine gameEng = new GameEngine("MGR GAME", 3000, 2000, vSync, gameLogic);
             gameEng.run();
         } catch (Exception excp) {
             excp.printStackTrace();

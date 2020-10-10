@@ -5,10 +5,11 @@ import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_T;
 import static org.lwjgl.opengl.GL11.*;
 
 
-public class Renderer {
+public class Renderer  {
 
     private ShaderProgram shaderProgram;
 
@@ -62,8 +63,8 @@ public class Renderer {
     public void setupSceneShader() throws Exception {
 
         shaderProgram = new ShaderProgram();
-        shaderProgram.createVertexShader(Utils.loadResource("/vertex.vs"));
-        shaderProgram.createFragmentShader(Utils.loadResource("/fragment.fs"));
+        shaderProgram.createVertexShader(Utils.loadResource("/Shaders/vertex.vs"));
+        shaderProgram.createFragmentShader(Utils.loadResource("/Shaders/fragment.fs"));
         shaderProgram.link();
 
         shaderProgram.createUniform("projectionMatrix");
@@ -81,8 +82,8 @@ public class Renderer {
     public void setupProfilerShader() throws Exception {
 
         profilerProgram = new ShaderProgram();
-        profilerProgram.createVertexShader(Utils.loadResource("/profiler_vertex.vs"));
-        profilerProgram.createFragmentShader(Utils.loadResource("/profiler_fragment.fs"));
+        profilerProgram.createVertexShader(Utils.loadResource("/Shaders/profiler_vertex.vs"));
+        profilerProgram.createFragmentShader(Utils.loadResource("/Shaders/profiler_fragment.fs"));
         profilerProgram.link();
 
         // Create uniforms for Ortographic-model projection matrix and base color
@@ -189,4 +190,5 @@ public class Renderer {
             profilerProgram.cleanup();
         }
     }
+
 }

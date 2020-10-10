@@ -1,6 +1,8 @@
 package com.mgr.engine;
 
 
+import com.mgr.configuration.PropertiesLoader;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -11,8 +13,10 @@ public class Profiler {
 
     private final Map<String, TextItem> profilerInfo = new HashMap<>();;
 
+    private PropertiesLoader props;
 
-    public void Init(){
+    public void init(PropertiesLoader props){
+        this.props = props;
     }
 
     public List<TextItem> getTextItems() {
@@ -31,7 +35,7 @@ public class Profiler {
             item.setText(value);
         } else {
              try {
-                 TextItem item = new TextItem(value, "/Users/mgarciar/Documents/Personal/Workspace/MGR3DEngine/build/resources/main/font_texture.png", 16, 16);
+                 TextItem item = new TextItem(value, this.props.getBaseTexturesFolder() + "\\font_texture.png", 16, 16);
                  profilerInfo.put(key, item);
                  //Set position of text on screen
                  float posy = (profilerInfo.values().size())*30.0f;
