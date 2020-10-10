@@ -108,8 +108,8 @@ public class Renderer  {
             projectionMatrix =  transformation.getProjectionMatrix(FOV, (float) window.getWidth(),  (float)window.getHeight(),  Z_NEAR, Z_FAR);
         }
 
-        //glEnable(GL_CULL_FACE);
-        //glCullFace(GL_FRONT);
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
         glFrontFace(GL_CCW);
         //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 

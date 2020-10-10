@@ -258,22 +258,22 @@ public class Room {
 
         // Create the walls triangles
         Triple<float[],int[],float[]> frontWallData = createFullWall(maxWidthWallSide, maxHeightWallSide, floorSize, stripWidthDim, stripHeightDim,stripFloorDim,
-                                                       new Vector3f(0.0f, 0.0f, -centerZ), false);
+                                                       new Vector3f(0.0f, 0.0f, -centerZ), true);
 
         Triple<float[],int[],float[]> backWallData = createFullWall(maxWidthWallSide, maxHeightWallSide, floorSize, stripWidthDim, stripHeightDim,stripFloorDim,
-                new Vector3f(0.0f, 0.0f, centerZ), true);
+                new Vector3f(0.0f, 0.0f, centerZ), false);
 
         Triple<float[],int[],float[]> leftWallData = createFullWall(maxWidthWallSide, maxHeightWallSide, floorSize, stripWidthDim, stripHeightDim,stripFloorDim,
-                new Vector3f(-centerX, 0.0f, 0.0f), true);
+                new Vector3f(-centerX, 0.0f, 0.0f), false);
 
         Triple<float[],int[],float[]> rightWallData = createFullWall(maxWidthWallSide, maxHeightWallSide, floorSize, stripWidthDim, stripHeightDim,stripFloorDim,
-                new Vector3f(centerX, 0.0f, 0.0f), false);
+                new Vector3f(centerX, 0.0f, 0.0f), true);
 
         Triple<float[],int[],float[]> ceilingWallData = createFullWall(maxWidthWallSide, maxHeightWallSide, floorSize, stripWidthDim, stripHeightDim,stripFloorDim,
-                new Vector3f(0.0f, maxHeightWallSide, 0.0f), false);
+                new Vector3f(0.0f, maxHeightWallSide, 0.0f), true);
 
         Triple<float[],int[],float[]> floorWallData = createFullWall(maxWidthWallSide, maxHeightWallSide, floorSize, stripWidthDim, stripHeightDim,stripFloorDim,
-                new Vector3f(0.0f, 0.0f, 0.0f), true);
+                new Vector3f(0.0f, 0.0f, 0.0f), false);
 
 
         // Calculate Normals
