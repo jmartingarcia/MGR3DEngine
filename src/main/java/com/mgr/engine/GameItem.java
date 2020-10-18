@@ -74,6 +74,7 @@ public class GameItem {
     }
 
     public void cleanUp() {
+
         mesh.cleanUp();
     }
 }

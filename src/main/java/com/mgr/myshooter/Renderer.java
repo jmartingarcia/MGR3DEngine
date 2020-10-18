@@ -1,11 +1,11 @@
 package com.mgr.myshooter;
 
 import com.mgr.engine.*;
+import com.mgr.myshooter.Map.Room;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 
-import static org.lwjgl.glfw.GLFW.GLFW_KEY_T;
 import static org.lwjgl.opengl.GL11.*;
 
 
@@ -96,6 +96,8 @@ public class Renderer  {
     public void clear() {
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LEQUAL);
     }
 
     public void render(final Camera camera, final Window window, final boolean showProfilerData) {
@@ -108,10 +110,11 @@ public class Renderer  {
             projectionMatrix =  transformation.getProjectionMatrix(FOV, (float) window.getWidth(),  (float)window.getHeight(),  Z_NEAR, Z_FAR);
         }
 
+
         glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);
         glFrontFace(GL_CCW);
-        //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+
 
         renderScene(camera, window);
 

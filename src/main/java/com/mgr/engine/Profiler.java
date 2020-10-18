@@ -46,4 +46,11 @@ public class Profiler {
         }
     }
 
+    public void cleanUp() {
+        for (String key : profilerInfo.keySet()) {
+            TextItem item = profilerInfo.get(key);
+            if (item != null) item.cleanUp();
+        }
+    }
+
 }

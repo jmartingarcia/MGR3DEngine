@@ -28,21 +28,26 @@ import static org.lwjgl.opengl.GL30.glGenVertexArrays;
 
 public class Mesh {
 
-    private final int vaoId;
+    protected int vaoId;
 
-    private final List<Integer> vboIdList;
+    protected final List<Integer> vboIdList;
 
-    private final int vertexCount;
+    protected int vertexCount;
 
-    private Material material;
+    protected Material material;
 
-    private Vector3f color = new Vector3f(0.0f, 1.0f, 0.0f);
+    protected Vector3f color;
 
 
 
-    public Mesh(float[] positions, int[] indices, float[] normals, float[] textCoords) {
+    public Mesh() {
 
         vboIdList = new ArrayList<>();
+        color = new Vector3f(0.0f, 1.0f, 0.0f);
+    }
+
+
+    public void init(float[] vertices, int[] indices, float[] normals, float[] textCoords) {
 
         FloatBuffer posBuffer = null;
         IntBuffer indicesBuffer = null;
@@ -58,8 +63,8 @@ public class Mesh {
             // Position VBO
             int posVboId = glGenBuffers();
             vboIdList.add(posVboId);
-            posBuffer = MemoryUtil.memAllocFloat(positions.length);
-            posBuffer.put(positions).flip();
+            posBuffer = MemoryUtil.memAllocFloat(vertices.length);
+            posBuffer.put(vertices).flip();
             glBindBuffer(GL_ARRAY_BUFFER, posVboId);
             glBufferData(GL_ARRAY_BUFFER, posBuffer, GL_STATIC_DRAW);
             glEnableVertexAttribArray(0);
@@ -118,7 +123,6 @@ public class Mesh {
         }
     }
 
-
     public Material getMaterial() {
         return material;
     }
@@ -163,25 +167,6 @@ public class Mesh {
         // Delete the VAO
         glBindVertexArray(0);
         glDeleteVertexArrays(vaoId);
-
-        material.cleanUp();
-    }
-
-    public void cleanUp(boolean cleanMaterial) {
-        glDisableVertexAttribArray(0);
-
-        // Delete the VBOs
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-        for (Integer vbId : vboIdList) {
-            glDeleteBuffers(vbId);
-        }
-
-        // Delete the VAO
-        glBindVertexArray(0);
-        glDeleteVertexArrays(vaoId);
-
-        if (cleanMaterial) material.cleanUp();
     }
 
     public void render() {

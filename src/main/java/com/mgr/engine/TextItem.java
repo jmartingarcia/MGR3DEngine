@@ -11,34 +11,35 @@ public class TextItem extends GameItem {
     private String text;
     private final int numCols;
     private final int numRows;
+    private final Texture texture;
 
     public TextItem(String text, String fontFileName, int numCols, int numRows) throws Exception {
         super();
         this.text = text;
         this.numCols = numCols;
         this.numRows = numRows;
-        Texture texture = new Texture(fontFileName);
+        texture = new Texture(fontFileName);
         this.setMesh(buildMesh(texture, numCols, numRows));
         setScale(0.3f);
     }
 
-    private Mesh buildMesh(Texture texture, int numCols, int numRows) {
+    private Mesh buildMesh(final Texture texture, final int numCols, final int numRows) {
 
-        byte[] chars = text.getBytes(ISO_8859_1);
-        int numChars = chars.length;
+        final byte[] chars = text.getBytes(ISO_8859_1);
+        final int numChars = chars.length;
 
-        List<Float> positions = new ArrayList<>();
-        List<Float> textCoords = new ArrayList<>();
-        List<Integer> indices = new ArrayList<>();
+        final List<Float> positions = new ArrayList<>();
+        final List<Float> textCoords = new ArrayList<>();
+        final List<Integer> indices = new ArrayList<>();
 
-        float tileWidth = (float) texture.getWidth() / (float) numCols;
-        float tileHeight = (float) texture.getHeight() / (float) numRows;
+        final float tileWidth = (float) texture.getWidth() / (float) numCols;
+        final float tileHeight = (float) texture.getHeight() / (float) numRows;
 
         for (int i = 0; i < numChars; i++) {
-            byte currChar = chars[i];
-            int col = currChar % numCols;
+            final byte currChar = chars[i];
+            final int col = currChar % numCols;
             //int row = (currChar / numCols) - 2;
-            int row = (currChar / numCols);
+            final int row = (currChar / numCols);
 
             //Left top vertex
             positions.add((float) i * tileWidth); //X
@@ -77,10 +78,11 @@ public class TextItem extends GameItem {
 
         }
 
-        float[] posArr        = Utils.listToArray(positions);
-        float[] textCoordsArr = Utils.listToArray(textCoords);
-        int[] indicesArr      = indices.stream().mapToInt(i->i).toArray();
-        Mesh mesh             = new Mesh(posArr, indicesArr, new float[0], textCoordsArr); // We don't need normals for the text
+        final float[] posArr        = Utils.listToArray(positions);
+        final float[] textCoordsArr = Utils.listToArray(textCoords);
+        final int[] indicesArr      = indices.stream().mapToInt(i->i).toArray();
+        final Mesh mesh             = new Mesh(); // We don't need normals for the text
+        mesh.init(posArr, indicesArr, new float[0], textCoordsArr);
         mesh.setMaterial(new Material(texture));
 
         return mesh;
@@ -93,8 +95,12 @@ public class TextItem extends GameItem {
 
     public void setText(String text) {
         this.text = text;
-        Texture texture = this.getMesh().getMaterial().getTexture();
-        this.getMesh().cleanUp(false);
+        this.getMesh().cleanUp();
         this.setMesh(buildMesh(texture, numCols, numRows));
+    }
+
+    public void cleanUp() {
+        super.cleanUp();
+        texture.cleanup();
     }
 }

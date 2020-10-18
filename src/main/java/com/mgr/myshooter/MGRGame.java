@@ -4,6 +4,8 @@ import com.mgr.configuration.PropertiesLoader;
 import com.mgr.engine.IGameLogic;
 import com.mgr.engine.Window;
 import com.mgr.engine.*;
+import org.apache.commons.lang3.tuple.Pair;
+import org.joml.Vector2i;
 import org.joml.Vector3f;
 
 import static org.lwjgl.glfw.GLFW.*;
@@ -104,23 +106,49 @@ public class MGRGame implements IGameLogic, IKeyListener {
 
         window.setClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
-        //Send info to the profiler
         if (showProfilerData) {
-            String text = "( X: " + player.getPosition().x + " , Y: " + player.getPosition().y + " , Z: " + player.getPosition().z + " , RX: " +
-                    player.getRotation().x + " , RY: " + player.getRotation().y + " , RZ: " + player.getRotation().z + " )";
-            profiler.setProfilerEntry("CAMERA", text);
-
-            text = "Number of rooms: " + world.getNumberOfRooms();
-            profiler.setProfilerEntry("NUM_ROOMS", text);
+            prepareProfileData();
         }
 
         renderer.render(player.getCamera(), window, showProfilerData);
+    }
+
+    private void prepareProfileData() {
+
+        // Player position data
+        String text = "( X: " + player.getPosition().x + " , Y: " + player.getPosition().y + " , Z: " + player.getPosition().z + " , RX: " +
+                player.getRotation().x + " , RY: " + player.getRotation().y + " , RZ: " + player.getRotation().z + " )";
+        profiler.setProfilerEntry("CAMERA", text);
+
+        // Number of rooms
+        text = "Number of rooms: " + world.getNumberOfRooms();
+        profiler.setProfilerEntry("NUM_ROOMS", text);
+
+        // Map
+        // Get player position on the map cell
+        final Vector2i playerCellPosition = world.getPLayerCellPosition(player.getPosition());
+        final Pair<Integer,int[][]> charMapData = world.getMapPlanAsIntMatrix();
+        Integer mapLineSize = charMapData.getLeft();
+        int[][] charMap     = charMapData.getRight();
+        for (int y=0;y<mapLineSize;y++) {
+            String line = "";
+            for (int x=0;x<mapLineSize;x++) {
+                if (playerCellPosition.x != x || playerCellPosition.y != y) {
+                    line += charMap[x][y] + "     ";
+                } else {
+                    line += "X     ";
+                }
+            }
+            profiler.setProfilerEntry("MAP" + y, line);
+        }
+
     }
 
     @Override
     public void cleanUp(){
         world.cleanUp();
         renderer.cleanUp();
+        profiler.cleanUp();
     }
 
     private void printProfileData() {

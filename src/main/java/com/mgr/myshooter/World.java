@@ -2,10 +2,12 @@ package com.mgr.myshooter;
 
 import com.mgr.configuration.PropertiesLoader;
 import com.mgr.engine.DirectionalLight;
+import com.mgr.myshooter.Map.RandomMap;
+import com.mgr.myshooter.Map.Room;
+import org.apache.commons.lang3.tuple.Pair;
+import org.joml.Vector2i;
 import org.joml.Vector3f;
-import org.joml.Vector4f;
 
-import java.sql.Time;
 import java.util.List;
 
 public class World {
@@ -38,6 +40,14 @@ public class World {
 
     public List<Room> getMapRooms(){
         return map.getRooms();
+    }
+
+    public Pair<Integer, int[][]> getMapPlanAsIntMatrix() {
+        return map.getMapPlanAsIntMatrix();
+    }
+
+    public Vector2i getPLayerCellPosition(final Vector3f worldPlayerPosition) {
+        return map.getPLayerCellPosition(worldPlayerPosition);
     }
 
     public void cleanUp() {

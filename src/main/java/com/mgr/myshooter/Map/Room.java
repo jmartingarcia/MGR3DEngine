@@ -1,24 +1,26 @@
-package com.mgr.myshooter;
+package com.mgr.myshooter.Map;
 
 import com.mgr.engine.*;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.tuple.Triple;
 import org.joml.*;
+import org.lwjgl.system.CallbackI;
 
+import javax.management.InvalidAttributeValueException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class Room {
 
-    private final int numStripsPerWall = 3;
+    // MAKE is always divisible by 2
+    private final int numStripsPerWall = 10;
 
-
-    // There is a mesh per wall side, floor and ceiling
-    private Mesh frontWall;
-    private Mesh backWall;
-    private Mesh leftWall;
-    private Mesh rightWall;
-    private Mesh ceilingWall;
-    private Mesh floorWall;
-
+    private final int roomWidth;
+    private final int roomHeight;
+    private final int roomDepth;
+    private final Map<WallOrientation, Material> materialsMap;
 
     private int index;
     private String type;
@@ -62,20 +64,62 @@ public class Room {
     private SpotLight[]  spotLights   = null;
 
 
-    private final HashMap<String, Integer> roomConnections = new HashMap<String, Integer>() {{
-        put("N", -1);
-        put("S", -1);
-        put("E", -1);
-        put("W", -1);
+    private final HashMap<WallOrientation, Integer> roomConnections = new HashMap<>() {{
+        put(WallOrientation.FRONT, -1);
+        put(WallOrientation.BACK, -1);
+        put(WallOrientation.RIGHT, -1);
+        put(WallOrientation.LEFT, -1);
+        put(WallOrientation.UP, -1); //Ceiling
+        put(WallOrientation.DOWN, -1); //Floor
     }};
 
+    // There could be multiple wall on each direction. When there is a door the wall is actually two smaller walls
+    // with the door in the middle
+    private final HashMap<WallOrientation, List<Wall>> walls = new HashMap<>() {{
+        put(WallOrientation.FRONT, null);
+        put(WallOrientation.BACK, null);
+        put(WallOrientation.RIGHT, null);
+        put(WallOrientation.LEFT, null);
+        put(WallOrientation.UP, null); //Ceiling
+        put(WallOrientation.DOWN, null); //Floor
+    }};
+
+    private List<Wall> getFrontWalls() {
+        return walls.get(WallOrientation.FRONT);
+    }
+
+    private List<Wall> getBackWalls() {
+        return walls.get(WallOrientation.BACK);
+    }
+
+    private List<Wall> getLeftWalls() {
+        return walls.get(WallOrientation.LEFT);
+    }
+
+    private List<Wall> getRightWalls() {
+        return walls.get(WallOrientation.RIGHT);
+    }
+
+    private List<Wall> getCeilingWalls() {
+        return walls.get(WallOrientation.UP);
+    }
+
+    private List<Wall> getFloorWalls() {
+        return walls.get(WallOrientation.DOWN);
+    }
 
 
-    public Room(final Integer index, final float scale, final int maxPointLights, final int maxSpotLights){
+    public Room(final Integer index, final float scale,
+                final int maxPointLights, final int maxSpotLights,
+                final int roomWidth, final int roomHeight, final int roomDepth,
+                final Map<WallOrientation, Material> materialsMap){
 
-        this.index = index;
-        this.scale = scale;
-
+        this.index         = index;
+        this.scale         = scale;
+        this.roomWidth     = roomWidth;
+        this.roomHeight    = roomHeight;
+        this.roomDepth     = roomDepth;
+        this.materialsMap  = materialsMap;
 
         // Create the lights with no intensity (that's what the shader expects if there is no lights, it needs the objects created)
         // based on the book, some cards might not like a flag that indicates of objects(light) exists or not. Not sure why yet, need to investigate.
@@ -95,13 +139,60 @@ public class Room {
 
     }
 
-    public void setPathWithRoomIndex(String path, Integer roomIndex){
+    public void setPathWithRoomIndex(final WallOrientation direction, final Integer roomIndex){
 
-        roomConnections.replace(path, roomIndex);
+        roomConnections.replace(direction, roomIndex);
+    }
+
+    /*
+    // Returns vertices, indices and textcoords that create a wall with a door opening on the middle
+    private Triple<float[],int[], float[]> createWallWithDoorOpening(final int maxWidthWallSide, final int maxHeightWallSide,
+                                                          final int maxFloorSide,
+                                                          final int stripWidthDim, final int stripHeightDim,
+                                                          final int stripFloorDim,
+                                                          final Vector3f fixedPos, final boolean clockWise) {
+
+
+        final int doorSpaceWidth  = maxWidthWallSide/5;
+        final int sideWallWidth   = (maxWidthWallSide - doorSpaceWidth)/2;
+        final int newStripWidthDim  = sideWallWidth / numStripsPerWall;
+
+        final Vector3f leftWallPosition = new Vector3f(fixedPos);
+        final Vector3f rightWallPosition = new Vector3f(fixedPos);
+
+        // Calculate the position of the left side and right side of the walls to make sure is centered
+        if (fixedPos.x !=0) {
+            // if x is > 0 means this wall is laying on the x axis since all my wall are straight
+            leftWallPosition.z  -= doorSpaceWidth/2;
+            rightWallPosition.z += doorSpaceWidth/2;
+        } else {
+            // walls are sitting or on the x axis or z axis
+            leftWallPosition.x  -= doorSpaceWidth/2;
+            rightWallPosition.x += doorSpaceWidth/2;
+        }
+
+        // A wall with a space with a door will be two full walls with a separation on the middle
+        final Triple<float[],int[],float[]> leftSideWallData = createFullWall(sideWallWidth, maxHeightWallSide, maxFloorSide, newStripWidthDim, stripHeightDim,stripFloorDim,
+                leftWallPosition, clockWise);
+        final Triple<float[],int[],float[]> rightSideWallData = createFullWall(sideWallWidth, maxHeightWallSide, maxFloorSide, newStripWidthDim, stripHeightDim,stripFloorDim,
+                rightWallPosition, clockWise);
+
+        // Increase the indices number on for the right side of the wall by the total number of vertices from the left side
+        final int[] rightSideIndices = rightSideWallData.getMiddle();
+        final int totalLeftSideVertices = leftSideWallData.getLeft().length/3;
+        for (int i=0;i<rightSideIndices.length;i++){
+            rightSideIndices[i] += totalLeftSideVertices;
+        }
+
+        final float[] allVertices  = ArrayUtils.addAll(leftSideWallData.getLeft(), rightSideWallData.getLeft());
+        final int[]   allIndices   = ArrayUtils.addAll(leftSideWallData.getMiddle(), rightSideIndices);
+        final float[] allTexCoords = ArrayUtils.addAll(leftSideWallData.getRight(), rightSideWallData.getRight());
+
+        return Triple.of(allVertices, allIndices, allTexCoords);
     }
 
 
-    // Returns vertices and indices that create a full wall
+    // Returns vertices, indices and textcoords that create a full wall
     private Triple<float[],int[], float[]> createFullWall(final int maxWidthWallSide, final int maxHeightWallSide,
                                                  final int maxFloorSide,
                                                  final int stripWidthDim, final int stripHeightDim,
@@ -202,7 +293,6 @@ public class Room {
         HashMap<Integer, Vector3f> normalPerVertex = new HashMap<>();
 
         // Each face is a triangle with three vertices. Each index point to the actual triangle vertex
-        int normalIdx = 0;
         for (int idx=0;idx<indices.length;idx+=3){
             Vector3f[] triangle = new Vector3f[3];
             for (int vertIdx=0;vertIdx<3;vertIdx++){
@@ -250,14 +340,17 @@ public class Room {
 
         final int stripWidthDim  = maxWidthWallSide / numStripsPerWall;
         final int stripHeightDim = maxHeightWallSide / numStripsPerWall;
-        final int stripFloorDim = floorSize / numStripsPerWall;
+        final int stripFloorDim  = floorSize / numStripsPerWall;
         final int centerX        = maxWidthWallSide/2;
-        final int centerY        = maxHeightWallSide/2;
+        //final int centerY        = maxHeightWallSide/2;
         final int centerZ        = floorSize/2;
 
 
         // Create the walls triangles
-        Triple<float[],int[],float[]> frontWallData = createFullWall(maxWidthWallSide, maxHeightWallSide, floorSize, stripWidthDim, stripHeightDim,stripFloorDim,
+        //Triple<float[],int[],float[]> frontWallData = createFullWall(maxWidthWallSide, maxHeightWallSide, floorSize, stripWidthDim, stripHeightDim,stripFloorDim,
+        //                                               new Vector3f(0.0f, 0.0f, -centerZ), true);
+
+        Triple<float[],int[],float[]> frontWallData = createWallWithDoorOpening(maxWidthWallSide, maxHeightWallSide, floorSize, stripWidthDim, stripHeightDim,stripFloorDim,
                                                        new Vector3f(0.0f, 0.0f, -centerZ), true);
 
         Triple<float[],int[],float[]> backWallData = createFullWall(maxWidthWallSide, maxHeightWallSide, floorSize, stripWidthDim, stripHeightDim,stripFloorDim,
@@ -331,15 +424,92 @@ public class Room {
         floorWall.setMaterial(floorMaterial);
 
     }
+    */
 
+    public void init() throws InvalidAttributeValueException {
+
+        for (final WallOrientation dir : WallOrientation.values()){
+            if (roomConnections.get(dir) != -1){ //There is a room next to this wall
+                walls.put(dir,getWallWithDoor(dir));
+            } else {
+                walls.put(dir,getWallWithNoDoor(dir));
+            }
+        }
+
+    }
+
+    /*
+    For a wall with a door what I'm really doing is creating two smaller walls leaving a hole on the center
+    In that hole I will locate a door
+     */
+    private List<Wall> getWallWithDoor(WallOrientation direction) throws InvalidAttributeValueException {
+
+        final int doorEntryWidth = roomWidth / 5;
+        final ArrayList<Wall> walls = new ArrayList<>();
+        int wallWidth  = (roomWidth - doorEntryWidth) / 2;
+        int wallDepth  = (roomDepth - doorEntryWidth) / 2;
+        int wallHeight = roomHeight;
+        boolean clockwise = true;
+        final Vector3f center1 = new Vector3f(0.0f, 0.0f, 0.0f);
+        final Vector3f center2 = new Vector3f(0.0f, 0.0f, 0.0f);
+
+        if (direction == WallOrientation.LEFT || direction == WallOrientation.RIGHT) {
+            wallWidth = wallDepth;  // When the wall is on the sides the depth of the room determines the width of the wall
+            center1.z  = roomDepth/2 - doorEntryWidth/2 - wallWidth/2;
+            center2.z  = roomDepth/2 + doorEntryWidth/2 + wallWidth/2;
+            if (direction == WallOrientation.RIGHT) clockwise = false;
+        } else if (direction == WallOrientation.UP || direction == WallOrientation.DOWN) {
+            wallHeight = roomDepth; // For the ceiling and floor the height of the wall is the depth of the room
+            center1.z  = roomDepth/2 - doorEntryWidth/2 - wallHeight/2;
+            center2.z  = roomDepth/2 + doorEntryWidth/2 + wallHeight/2;
+            if (direction == WallOrientation.DOWN) clockwise = false;
+        } else if (direction == WallOrientation.FRONT|| direction == WallOrientation.BACK) {
+            center1.x  = roomWidth/2 - doorEntryWidth/2 - wallWidth/2;
+            center2.x  = roomWidth/2 + doorEntryWidth/2 + wallWidth/2;
+            if (direction == WallOrientation.BACK) clockwise = false;
+        }
+
+        walls.add( new Wall(wallWidth, wallHeight, numStripsPerWall, direction, clockwise,
+                center1, materialsMap.get(direction)));
+        walls.add( new Wall(wallWidth, wallHeight, numStripsPerWall, direction, clockwise,
+                center2, materialsMap.get(direction)));
+
+        return walls;
+    }
+
+    private List<Wall> getWallWithNoDoor(WallOrientation direction) throws InvalidAttributeValueException {
+
+        final ArrayList<Wall> walls = new ArrayList<>();
+        int wallWidth  = roomWidth;
+        int wallHeight = roomHeight;
+        boolean clockwise = true;
+        final Vector3f center = new Vector3f(0.0f, 0.0f, 0.0f);
+
+        if (direction == WallOrientation.LEFT || direction == WallOrientation.RIGHT) {
+            wallWidth = roomDepth;  // When the wall is on the sides the depth of the room determines the width of the wall
+            center.z = roomDepth/2;
+            if (direction == WallOrientation.RIGHT) clockwise = false;
+        } else if (direction == WallOrientation.UP || direction == WallOrientation.DOWN) {
+            wallHeight = roomDepth; // For the ceiling and floor the height of the wall is the depth of the room
+            center.z = roomDepth/2;
+            if (direction == WallOrientation.DOWN) clockwise = false;
+        } else if (direction == WallOrientation.FRONT|| direction == WallOrientation.BACK) {
+            center.x = roomWidth/2;
+            if (direction == WallOrientation.BACK) clockwise = false;
+        }
+
+        walls.add( new Wall(wallWidth, wallHeight, numStripsPerWall, direction, clockwise,
+                           center, materialsMap.get(direction)));
+
+        return walls;
+    }
 
     public void cleanUp() {
-        frontWall.cleanUp();
-        backWall.cleanUp();
-        leftWall.cleanUp();
-        rightWall.cleanUp();
-        ceilingWall.cleanUp();
-        floorWall.cleanUp();
+        for (WallOrientation dir : WallOrientation.values()){
+            List<Wall> selectedWalls = walls.get(dir);
+            for (Wall wall : selectedWalls)
+                wall.cleanUp();
+        }
     }
 
     // the shader program is expected to have the following uniforms
@@ -399,31 +569,15 @@ public class Room {
         }
         shaderProgram.setUniform("pointLights", currPointLights);
 
-
-        //Front Wall
-        // Send texture to the shader
-        shaderProgram.setUniform("material", frontWall.getMaterial());
-        frontWall.render();
-
-        //Back Wall
-        shaderProgram.setUniform("material", backWall.getMaterial());
-        backWall.render();
-
-        //Left Wall
-        shaderProgram.setUniform("material", leftWall.getMaterial());
-        leftWall.render();
-
-        //Right wall
-        shaderProgram.setUniform("material", rightWall.getMaterial());
-        rightWall.render();
-
-        //Ceiling wall
-        shaderProgram.setUniform("material", ceilingWall.getMaterial());
-        ceilingWall.render();
-
-        //Floor wall
-        shaderProgram.setUniform("material", floorWall.getMaterial());
-        floorWall.render();
+        // Render all walls
+        for (WallOrientation dir : WallOrientation.values()){
+            List<Wall> selectedWalls = walls.get(dir);
+            if (selectedWalls == null) continue;
+            for (Wall wall : selectedWalls) {
+                shaderProgram.setUniform("material", wall.getMaterial());
+                wall.render();
+            }
+        }
     }
 
 }

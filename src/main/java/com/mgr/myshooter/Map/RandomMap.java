@@ -1,9 +1,14 @@
-package com.mgr.myshooter;
+package com.mgr.myshooter.Map;
 
 import com.mgr.configuration.PropertiesLoader;
+import com.mgr.engine.Material;
 import com.mgr.engine.Texture;
+import org.apache.commons.lang3.tuple.Pair;
+import org.joml.Vector2i;
 import org.joml.Vector3f;
+import org.joml.Vector4f;
 
+import javax.management.InvalidAttributeValueException;
 import java.util.*;
 
 public class RandomMap {
@@ -11,9 +16,10 @@ public class RandomMap {
     private final int MAX_CELLS = 10;
 
     // For now the dimensions need to be multiples of Room (numStripsPerWall)
-    private final int CELL_WIDTH_METERS   = 180;
+    private final int CELL_WIDTH_METERS   = 200;
     private final int CELL_HEIGHT_METERS  = 60;
     private final int CELL_FLOOR_METERS   = 300;
+    private final int SPACE_BETWEEN_ROOMS_METERS = 40;
 
     private  int maxPointLights = 5;
     private  int maxSpotLights  = 5;
@@ -22,6 +28,12 @@ public class RandomMap {
     private int totalGeneratedRooms = 0;
     private List<Room> rooms;
     private PropertiesLoader props;
+
+    // In the future there will be more themes. Themes will determine different things on the map like textures
+    private final MapTheme mapTheme = MapTheme.SPACESHIP;
+
+    private Map<WallOrientation, Material> mapMaterials = null;
+
 
     /*private final List<String> roomTypes = Arrays.asList("NSWE","NSW","NSE","NS","WE","W","E","N","S","SE","SW","NW","NE");
     private final Map<String, String> directionOpposites = new HashMap<String, String>() {{
@@ -82,29 +94,31 @@ public class RandomMap {
             }
     }
 
-    private List<Room> generateRoomsFromMap(){
+    private List<Room> generateRoomsFromMap() throws InvalidAttributeValueException {
 
         final List<Room> result = new ArrayList<>();
 
-        // Read the map plan and generate the actual com.mgr.myshooter.Room object with it's connections
+        // Read the map plan and generate the actual com.mgr.myshooter.Map.Room object with it's connections
         for (int x=0;x<MAX_CELLS;x++)
             for (int y=0;y<MAX_CELLS;y++){
 
                 int roomIndex = mapMatrix[x][y];
                 if (roomIndex>0){
-                    Room room = new Room(roomIndex, 1.0f, this.maxPointLights, this.maxSpotLights);
+                    Room room = new Room(roomIndex, 1.0f, this.maxPointLights, this.maxSpotLights,
+                                         CELL_WIDTH_METERS, CELL_HEIGHT_METERS, CELL_FLOOR_METERS,
+                                         mapMaterials);
                     //Link with room on the West
                     if (x > 0 && mapMatrix[x-1][y] != 0)
-                        room.setPathWithRoomIndex("W",mapMatrix[x-1][y]);
+                        room.setPathWithRoomIndex(WallOrientation.LEFT,mapMatrix[x-1][y]);
                     //Link with room on the East
                     if (x < MAX_CELLS-1 && mapMatrix[x+1][y] != 0)
-                        room.setPathWithRoomIndex("E",mapMatrix[x+1][y]);
+                        room.setPathWithRoomIndex(WallOrientation.RIGHT,mapMatrix[x+1][y]);
                     //Link with room on the North
                     if (y > 0 && mapMatrix[x][y-1] != 0)
-                        room.setPathWithRoomIndex("N",mapMatrix[x][y-1]);
+                        room.setPathWithRoomIndex(WallOrientation.FRONT,mapMatrix[x][y-1]);
                     //Link with room on the South
                     if (y < MAX_CELLS-1 && mapMatrix[x][y+1] != 0)
-                        room.setPathWithRoomIndex("S",mapMatrix[x][y+1]);
+                        room.setPathWithRoomIndex(WallOrientation.BACK,mapMatrix[x][y+1]);
 
                     room.setWorldPosition(calcRoomWorldPosition(x, y));
                     result.add(room);
@@ -112,44 +126,85 @@ public class RandomMap {
 
             }
 
+        // Once all the rooms have been crated and their connections has been calculated
+        // we can create all the geometry
+        for (Room room : result)
+            room.init();
+
         return result;
     }
 
     private Vector3f calcRoomWorldPosition(final int x, final int y) {
-        return new Vector3f(0.0f,0.0f,0.0f);
+
+        //return new Vector3f(0.0f,0.0f,0.0f);
+        Vector3f result = new Vector3f(x*(CELL_WIDTH_METERS + SPACE_BETWEEN_ROOMS_METERS), 0.0f, y*(CELL_FLOOR_METERS + SPACE_BETWEEN_ROOMS_METERS));
+        return result;
+    }
+
+    private void cleanAllMaterials() {
+        for (final WallOrientation dir : WallOrientation.values()) {
+            final Material material = mapMaterials.get(dir);
+            if (material != null) material.cleanUp();
+        }
+    }
+
+
+    private Map<WallOrientation, Texture> generateTexturesForRoom() throws Exception {
+
+        // In the future when implementing multiple themes
+        //if (mapTheme == MapTheme.SPACESHIP) {
+        //}
+        final HashMap<WallOrientation, Texture> result = new HashMap<>();
+
+        final Texture wallTexture = new Texture(this.props.getBaseTexturesFolder() + "\\panel1\\panel1_Base_Color.jpg");
+        final Texture floorTexture = new Texture(this.props.getBaseTexturesFolder() + "\\panel4\\panel4_Base_Color.jpg");
+        final Texture ceilingTexture = new Texture(this.props.getBaseTexturesFolder() + "\\panel6\\panel6_Base_Color.jpg");
+
+        for (final WallOrientation dir : WallOrientation.values()) {
+            if (dir != WallOrientation.UP && dir != WallOrientation.DOWN) {
+                result.put(dir, wallTexture);
+            } else if (dir == WallOrientation.UP) {
+                result.put(dir, ceilingTexture);
+            } else {
+                result.put(dir, floorTexture);
+            }
+        }
+
+        return result;
+    }
+
+    private Map<WallOrientation, Material> generateMaterialsForRooms() throws Exception {
+
+        final HashMap<WallOrientation, Material> result = new HashMap<>();
+
+        final Map<WallOrientation, Texture> textures = generateTexturesForRoom();
+
+        for (final WallOrientation dir : WallOrientation.values()) {
+            result.put(dir, new Material(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f),
+                    new Vector4f(1.0f, 1.0f, 1.0f, 1.0f),
+                    new Vector4f(1.0f, 1.0f, 1.0f, 1.0f),
+                    textures.get(dir), 0.6f));
+        }
+
+        return result;
     }
 
     public void generateRandomMap(Integer totalNumberRooms) {
-        generateMap(MAX_CELLS/2, MAX_CELLS/2 , totalNumberRooms);
-        rooms = generateRoomsFromMap();
-
-        //Creating room textures. For now all rooms have same textures
-        Texture wallTexture = null,
-                floorTexture = null,
-                ceilingTexture = null;
 
         try {
-            wallTexture = new Texture(this.props.getBaseTexturesFolder() + "\\panel1\\panel1_Base_Color.jpg");
+
+            generateMap(0, 0, totalNumberRooms);
+
+            // Create Materials for rooms
+            if (mapMaterials != null)
+                cleanAllMaterials();
+            mapMaterials = generateMaterialsForRooms();
+
+            rooms = generateRoomsFromMap();
+
         } catch (Exception ex) {
-            System.out.println("Could not load wall textures: " + ex.getMessage());
+            System.out.println("ERROR generating random map " + ex.getMessage());
         }
-
-        try {
-            floorTexture = new Texture(this.props.getBaseTexturesFolder() + "\\panel4\\panel4_Base_Color.jpg");
-        } catch (Exception ex) {
-            System.out.println("Could not load floor textures: " + ex.getMessage());
-        }
-
-        try {
-            ceilingTexture = new Texture(this.props.getBaseTexturesFolder() + "\\panel6\\panel6_Base_Color.jpg");
-        } catch (Exception ex) {
-            System.out.println("Could not load ceiling textures: " + ex.getMessage());
-        }
-
-
-        for (Room room : rooms)
-            room.createModel(CELL_WIDTH_METERS, CELL_HEIGHT_METERS, CELL_FLOOR_METERS, wallTexture, wallTexture, wallTexture, wallTexture,
-                    floorTexture, ceilingTexture);
 
     }
 
@@ -163,18 +218,24 @@ public class RandomMap {
          }
     }
 
+    public Pair<Integer,int[][]> getMapPlanAsIntMatrix(){
+        return Pair.of(MAX_CELLS,mapMatrix);
+    }
+
     public List<Room> getRooms() {
-        //for (com.mgr.myshooter.Room room : rooms)
-        //    room.drawRoom();
-        List<Room> result = new ArrayList<>();
-        Room room = rooms.get(0);
-        result.add(room);
-        return result;
+        return rooms;
     }
 
     public void cleanUp(){
         for (Room room : rooms)
             room.cleanUp();
+        cleanAllMaterials();
+    }
+
+    public Vector2i getPLayerCellPosition(final Vector3f worldPlayerPosition){
+        int x_cell = Math.round(worldPlayerPosition.x / CELL_WIDTH_METERS);
+        int y_cell = Math.round(worldPlayerPosition.z / CELL_FLOOR_METERS);
+        return new Vector2i(x_cell,y_cell);
     }
 
 }

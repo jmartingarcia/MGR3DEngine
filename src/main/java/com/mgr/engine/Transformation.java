@@ -1,6 +1,6 @@
 package com.mgr.engine;
 
-import com.mgr.myshooter.Room;
+import com.mgr.myshooter.Map.Room;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
