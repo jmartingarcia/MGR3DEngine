@@ -2,6 +2,7 @@ package com.mgr.myshooter;
 
 import com.mgr.engine.*;
 import com.mgr.myshooter.Map.Room;
+import com.mgr.myshooter.Map.RoomConnector;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -153,12 +154,16 @@ public class Renderer  {
 
         // Get all rooms from the map to draw
         for (Room room : world.getMapRooms()){
-
             Matrix4f modelViewMatrix = transformation.getModelViewMatrix(room, viewMatrix) ;
-
             shaderProgram.setUniform("modelViewMatrix", modelViewMatrix);
-
             room.render(shaderProgram, viewMatrix);
+        }
+
+        // Get all rooms connectors from the map to draw
+        for (RoomConnector connector : world.getMapRoomConnectors()){
+            Matrix4f modelViewMatrix = transformation.getModelViewMatrix(connector, viewMatrix) ;
+            shaderProgram.setUniform("modelViewMatrix", modelViewMatrix);
+            connector.render(shaderProgram, viewMatrix);
         }
 
         shaderProgram.unbind();

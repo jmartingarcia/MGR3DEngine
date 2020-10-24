@@ -79,7 +79,7 @@ public class MGRGame implements IGameLogic, IKeyListener {
             rotation_y = -1;
         } else if ( window.isKeyPressed(GLFW_KEY_N)) { // Add 1 hour
             world.addTime(60);
-        } else if ( window.isKeyPressed(GLFW_KEY_N)) { // Goes back 1 hour
+        } else if ( window.isKeyPressed(GLFW_KEY_M)) { // Goes back 1 hour
             world.addTime(-60);
         }
 
@@ -144,6 +144,15 @@ public class MGRGame implements IGameLogic, IKeyListener {
 
     }
 
+    private void createNewMap() {
+        if (world != null) {
+            world.cleanUp();
+            // Move Player to 0,0
+            player.setPosition(new Vector3f(0.0f, 20.0f, 0.0f));
+            world.init();
+        }
+    }
+
     @Override
     public void cleanUp(){
         world.cleanUp();
@@ -164,6 +173,8 @@ public class MGRGame implements IGameLogic, IKeyListener {
     public void keyReleased(int keyCode) {
         if (keyCode == GLFW_KEY_T) {
             printProfileData();
+        } else if (keyCode == GLFW_KEY_I) {
+            createNewMap();
         }
     }
 

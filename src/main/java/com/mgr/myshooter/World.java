@@ -4,6 +4,7 @@ import com.mgr.configuration.PropertiesLoader;
 import com.mgr.engine.DirectionalLight;
 import com.mgr.myshooter.Map.RandomMap;
 import com.mgr.myshooter.Map.Room;
+import com.mgr.myshooter.Map.RoomConnector;
 import org.apache.commons.lang3.tuple.Pair;
 import org.joml.Vector2i;
 import org.joml.Vector3f;
@@ -40,6 +41,10 @@ public class World {
 
     public List<Room> getMapRooms(){
         return map.getRooms();
+    }
+
+    public List<RoomConnector> getMapRoomConnectors(){
+        return map.getConnectors();
     }
 
     public Pair<Integer, int[][]> getMapPlanAsIntMatrix() {

@@ -28,6 +28,10 @@ public class Camera {
         this.upvector = upvector;
     }
 
+    public void setPosition(Vector3f newPosition) {
+        this.position = newPosition;
+    }
+
     public void moveRotation(float offsetX, float offsetY, float offsetZ) {
         rotation.x += offsetX;
         rotation.y += offsetY;

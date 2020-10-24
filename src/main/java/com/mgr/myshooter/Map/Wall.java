@@ -71,10 +71,10 @@ public class Wall extends Mesh {
         int textCoordsIdx = 0;
 
         if (orientation == WallOrientation.FRONT || orientation == WallOrientation.BACK) {
-            for (int y = 0; y <= height; y += stripHeightDim)
-                for (int x = 0; x <= width; x += stripWidthDim) {
-                    vertices[idxVertex] = x - width / 2;
-                    vertices[idxVertex + 1] = y;
+            for (int y = -height/2; y <= height/2; y += stripHeightDim)
+                for (int x = -width/2; x <= width/2; x += stripWidthDim) {
+                    vertices[idxVertex] = center.x + x;
+                    vertices[idxVertex + 1] = center.y + y;
                     vertices[idxVertex + 2] = center.z;
                     idxVertex += 3;
 
@@ -84,11 +84,11 @@ public class Wall extends Mesh {
                     textCoordsIdx += 2;
                 }
         } else if (orientation == WallOrientation.LEFT || orientation == WallOrientation.RIGHT) {
-            for (int y = 0; y <= height; y += stripHeightDim)
-                for (int z = 0; z <= width; z += stripWidthDim) {
+            for (int y = -height/2; y <= height/2; y += stripHeightDim)
+                for (int z = -width/2; z <= width/2; z += stripWidthDim) {
                     vertices[idxVertex] = center.x;
-                    vertices[idxVertex + 1] = y;
-                    vertices[idxVertex + 2] = z - width / 2;
+                    vertices[idxVertex + 1] = center.y + y;
+                    vertices[idxVertex + 2] = center.z + z;
                     idxVertex += 3;
 
                     // Texture Coordinates
@@ -97,11 +97,11 @@ public class Wall extends Mesh {
                     textCoordsIdx += 2;
                 }
         } else { //Ceiling or floor (orientation == WallOrientation.UP || orientation == WallOrientation.DOWN)
-            for (int z = 0; z <= height; z += stripHeightDim)
-                for (int x = 0; x <= width; x += stripWidthDim) {
-                    vertices[idxVertex] = x - width / 2;
+            for (int z = -height/2; z <= height/2; z += stripHeightDim)
+                for (int x = -width/2; x <= width/2; x += stripWidthDim) {
+                    vertices[idxVertex] = center.x + x;
                     vertices[idxVertex + 1] = center.y;
-                    vertices[idxVertex + 2] = z - height / 2;
+                    vertices[idxVertex + 2] = center.z + z;
                     idxVertex += 3;
 
                     texture_coords[textCoordsIdx]   =  (float)x/width;

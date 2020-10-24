@@ -62,7 +62,7 @@ public class Player {
     }
 
     public void setPosition(final Vector3f position) {
-        camera.movePosition(position.x, position.y, position.z);
+        camera.setPosition(position);
     }
 
     public void walk(final float elapsedSeconds, final Vector3f speedPerAxis){
