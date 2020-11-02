@@ -4,12 +4,13 @@ import com.mgr.configuration.PropertiesLoader;
 import com.mgr.engine.Material;
 import com.mgr.engine.Texture;
 import org.apache.commons.lang3.tuple.Pair;
-import org.joml.Vector2i;
-import org.joml.Vector3f;
-import org.joml.Vector4f;
+import org.joml.*;
 
 import javax.management.InvalidAttributeValueException;
+import java.lang.Math;
 import java.util.*;
+import java.util.Random;
+import java.util.stream.Collectors;
 
 public class RandomMap {
 
@@ -28,7 +29,12 @@ public class RandomMap {
     private int[][] mapMatrix = new int[MAX_CELLS][MAX_CELLS];
     private int totalGeneratedRooms = 0;
     private List<Room> rooms;
-    private List<RoomConnector> connectors;
+
+    // The Key is the room index to that has this connectors. Two or more rooms can share same connectors.
+    private HashMap<Integer, ArrayList<RoomConnector>> connectors;
+    // This list will contain same connectors as on the Hashmap but as a list and unique.
+    private List<RoomConnector> uniqueConnectors;
+
     private PropertiesLoader props;
 
     // In the future there will be more themes. Themes will determine different things on the map like textures
@@ -51,9 +57,12 @@ public class RandomMap {
 
 
     public List<RoomConnector> getConnectors() {
-        return connectors;
+        return uniqueConnectors;
     }
 
+    public List<RoomConnector> getConnectorsOnRoomIndex(final int roomIndex) {
+        return connectors.get(roomIndex);
+    }
 
     private void generateMap(Integer posX, Integer posY ,Integer totalNumRooms){
 
@@ -163,24 +172,13 @@ public class RandomMap {
         //}
         final HashMap<WallOrientation, Texture> result = new HashMap<>();
 
-        final Texture wallTexture1 = new Texture(this.props.getBaseTexturesFolder() + "\\panel1\\panel1_Base_Color.jpg");
-        final Texture wallTexture2 = new Texture(this.props.getBaseTexturesFolder() + "\\panel2\\panel2_Base_Color.jpg");
-        final Texture wallTexture3 = new Texture(this.props.getBaseTexturesFolder() + "\\panel3\\panel3_Base_Color.jpg");
-        final Texture wallTexture4 = new Texture(this.props.getBaseTexturesFolder() + "\\panel5\\panel5_Base_Color.jpg");
-
-
+        final Texture wallTexture  = new Texture(this.props.getBaseTexturesFolder() + "\\walls_spaceship.png");
         final Texture floorTexture = new Texture(this.props.getBaseTexturesFolder() + "\\panel4\\panel4_Base_Color.jpg");
         final Texture ceilingTexture = new Texture(this.props.getBaseTexturesFolder() + "\\panel6\\panel6_Base_Color.jpg");
 
         for (final WallOrientation dir : WallOrientation.values()) {
-            if (dir == WallOrientation.FRONT) {
-                result.put(dir, wallTexture1);
-            } else if (dir == WallOrientation.BACK) {
-                result.put(dir, wallTexture2);
-            } else if (dir == WallOrientation.LEFT) {
-                result.put(dir, wallTexture3);
-            } else if (dir == WallOrientation.RIGHT) {
-                result.put(dir, wallTexture4);
+            if (dir != WallOrientation.UP && dir != WallOrientation.DOWN) {
+                result.put(dir, wallTexture);
             } else if (dir == WallOrientation.UP) {
                 result.put(dir, ceilingTexture);
             } else {
@@ -248,7 +246,7 @@ public class RandomMap {
             generateMap(0, 0, totalNumberRooms);
 
             // Create Materials for rooms
-            if (mapMaterials != null || connectorsMaterials !=null)
+            if (mapMaterials != null || connectorsMaterials != null)
                 cleanAllMaterials();
             mapMaterials = generateMaterialsForRooms();
 
@@ -257,23 +255,43 @@ public class RandomMap {
 
             rooms = generateRoomsFromMap();
             connectors = generateConnectors();
+            // The connectors contains a hashmap with connector per room. Because two or more rooms can share same connectors
+            // same connector will be referenced more than once on the hashmap.
+            // For speed in some processes I need the unique list of connectors. This method call generates the unique list.
+            uniqueConnectors = generateUniqueConnectors();
 
         } catch (Exception ex) {
             System.out.println("ERROR generating random map " + ex.getMessage());
         }
-
     }
 
-    private List<RoomConnector> generateConnectors() throws Exception {
+    private HashMap<Integer, ArrayList<RoomConnector>> generateConnectors() throws Exception {
 
-        final ArrayList<RoomConnector> connectors = new ArrayList<>();
+        final HashMap<Integer, ArrayList<RoomConnector>> new_connectors = new HashMap<>();
+
+        // This list just helps to not created duplicated connectors.
+        // When a connector is created between two rooms a string with format:
+        // "room1Index:room2Index" will be created, then before creating a new connector
+        // we will verify the string "room1Index:room2Index" or "room2Index:room1Index" does not
+        // already exists.
+        final ArrayList<String> processedConnectors = new ArrayList<>();
 
         int connectorIndex = 0;
 
         for (final Room room : rooms) {
-            final Map<WallOrientation, Integer> roomConnections = room.getRoomConnections();
+            final Map<WallOrientation, Integer> roomConnections = room.getAdjacentRooms();
             for (final WallOrientation dir : WallOrientation.values()){
                 if (roomConnections.get(dir) == -1) continue;
+
+                //Check if this connector has already been created from the other room
+                final String currentConnectorName = room.getIndex() + ":" + roomConnections.get(dir);
+                final String oppositeConnectorName = roomConnections.get(dir) + ":" + room.getIndex();
+                if (processedConnectors.stream().filter(s -> s.equalsIgnoreCase(oppositeConnectorName)).collect(Collectors.toList()).isEmpty()) {
+                    processedConnectors.add(currentConnectorName);
+                } else {
+                    continue;
+                }
+
                 // The RoomConnector is assumed to always be pointing north. But rooms could be connected on their west or east walls
                 // In that case I need to switch Width vs Depth
                 int connectorWidth = DOOR_WIDTH;
@@ -288,11 +306,45 @@ public class RandomMap {
                 newConnector.setWorldPosition(calcConnectorWorldPosition(room, dir, connectorDepth));
                 newConnector.init();
 
-                connectors.add(newConnector);
+                // Assign connector to current room and to destination room
+                ArrayList<RoomConnector> currentRoomConnectors = null;
+                if (new_connectors.containsKey(room.getIndex())) {
+                    currentRoomConnectors = new_connectors.get(room.getIndex());
+                } else {
+                    currentRoomConnectors = new ArrayList<>();
+                }
+                currentRoomConnectors.add(newConnector);
+                new_connectors.put(room.getIndex(), currentRoomConnectors);
+
+                ArrayList<RoomConnector> destRoomConnectors = null;
+                if (new_connectors.containsKey(roomConnections.get(dir))) {
+                    destRoomConnectors = new_connectors.get(roomConnections.get(dir));
+                } else {
+                    destRoomConnectors = new ArrayList<>();
+                }
+                destRoomConnectors.add(newConnector);
+                new_connectors.put(roomConnections.get(dir), destRoomConnectors); //Both rooms share same connector
             }
+
         }
 
-        return connectors;
+        return new_connectors;
+    }
+
+    private List<RoomConnector> generateUniqueConnectors() {
+        // Generate the unique list of connectors
+        // The Hashmap of connectors will have duplicate references since is stored as connectors by room
+        // and rooms share same connector.
+
+        final ArrayList<RoomConnector> resultList = new ArrayList<>();
+        for (final int roomIndex : connectors.keySet()){
+            resultList.addAll(connectors.get(roomIndex)); // All connectors all rooms in one list but with possible duplicates
+        }
+
+        // Converting to a set will remove all duplicates
+        Set<RoomConnector> targetSet = new HashSet<>(resultList);
+        final ArrayList<RoomConnector> uniqueList = new ArrayList<>(targetSet);
+        return uniqueList;
     }
 
     private Vector3f calcConnectorWorldPosition(final Room room, final WallOrientation dir, final int connectorDepth) throws Exception {
@@ -341,7 +393,7 @@ public class RandomMap {
         mapMatrix = new int[MAX_CELLS][MAX_CELLS];
         for (Room room : rooms)
             room.cleanUp();
-        for (RoomConnector connector : connectors)
+        for (RoomConnector connector : uniqueConnectors)
             connector.cleanUp();
         cleanAllMaterials();
     }
@@ -352,4 +404,12 @@ public class RandomMap {
         return new Vector2i(x_cell,y_cell);
     }
 
+//    public List<Planef> getPlanesFromRoomAtCell(final Vector2i cellPosition) {
+//        final int roomIndex = mapMatrix[cellPosition.x][cellPosition.y];
+//        final Room room = rooms.stream()
+//                               .filter(r->r.getIndex() == roomIndex)
+//                               .collect(Collectors.toList()).get(0);
+//        final List<RoomConnector> roomConnectors = room.getRoomConnectors();
+//
+//    }
 }

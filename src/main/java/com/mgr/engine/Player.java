@@ -7,8 +7,9 @@ public class Player {
     //private final Mesh model;
 
     private final Camera camera;
-    private float speed = 35.0f;
-    private float rota_speed = 25.0f;
+    private float speed = 85.0f;
+    private float rota_speed = 45.0f;
+    private float radius = 1.0f; // Used for collision detection
 
 
     public Player(){
@@ -63,6 +64,10 @@ public class Player {
 
     public void setPosition(final Vector3f position) {
         camera.setPosition(position);
+    }
+
+    public float getRadius() {
+        return radius;
     }
 
     public void walk(final float elapsedSeconds, final Vector3f speedPerAxis){

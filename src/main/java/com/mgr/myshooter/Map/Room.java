@@ -62,7 +62,7 @@ public class Room {
     protected SpotLight[]  spotLights   = null;
 
 
-    protected final HashMap<WallOrientation, Integer> roomConnections = new HashMap<>() {{
+    protected final HashMap<WallOrientation, Integer> adjacentRooms = new HashMap<>() {{
         put(WallOrientation.FRONT, -1);
         put(WallOrientation.BACK, -1);
         put(WallOrientation.RIGHT, -1);
@@ -71,8 +71,8 @@ public class Room {
         put(WallOrientation.DOWN, -1); //Floor
     }};
 
-    public Map<WallOrientation, Integer> getRoomConnections() {
-        return roomConnections;
+    public Map<WallOrientation, Integer> getAdjacentRooms() {
+        return adjacentRooms;
     }
 
     // There could be multiple wall on each direction. When there is a door the wall is actually two smaller walls
@@ -85,6 +85,7 @@ public class Room {
         put(WallOrientation.UP, null); //Ceiling
         put(WallOrientation.DOWN, null); //Floor
     }};
+
 
     protected List<Wall> getFrontWalls() {
         return walls.get(WallOrientation.FRONT);
@@ -144,13 +145,13 @@ public class Room {
 
     public void setPathWithRoomIndex(final WallOrientation direction, final Integer roomIndex){
 
-        roomConnections.replace(direction, roomIndex);
+        adjacentRooms.replace(direction, roomIndex);
     }
 
     public void init() throws InvalidAttributeValueException {
 
         for (final WallOrientation dir : WallOrientation.values()){
-            if (roomConnections.get(dir) != -1){ //There is a room next to this wall
+            if (adjacentRooms.get(dir) != -1){ //There is a room next to this wall
                 walls.put(dir,getWallWithDoor(dir));
             } else {
                 walls.put(dir,getWallWithNoDoor(dir));

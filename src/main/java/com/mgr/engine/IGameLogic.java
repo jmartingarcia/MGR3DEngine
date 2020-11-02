@@ -6,7 +6,7 @@ public interface IGameLogic {
 
     void input(Window window);
 
-    void update(float interval);
+    void update(float interval, MouseInput mouseInput);
     
     void render(Window window);
 

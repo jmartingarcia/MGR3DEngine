@@ -5,6 +5,7 @@ import com.mgr.engine.IGameLogic;
 import com.mgr.engine.Window;
 import com.mgr.engine.*;
 import org.apache.commons.lang3.tuple.Pair;
+import org.joml.Vector2f;
 import org.joml.Vector2i;
 import org.joml.Vector3f;
 
@@ -34,6 +35,11 @@ public class MGRGame implements IGameLogic, IKeyListener {
 
     private float elapsedTime = 0.0f;
 
+    private final Vector3f startPositionPlayer = new Vector3f(0.0f, 30.0f, 0.0f);
+
+    private final float MOUSE_SENSITIVITY = 0.2f;
+
+
 
     public MGRGame() {
         properties = new PropertiesLoader();
@@ -47,7 +53,7 @@ public class MGRGame implements IGameLogic, IKeyListener {
     public void init(Window window) throws Exception {
         properties.init();
         renderer.init(window, profiler, world);
-        player.setPosition(new Vector3f(0.0f, 20.0f, 0.0f));
+        player.setPosition(startPositionPlayer);
         profiler.init(properties);
         window.setKeyListener(this);
     }
@@ -86,7 +92,7 @@ public class MGRGame implements IGameLogic, IKeyListener {
     }
 
     @Override
-    public void update(float interval) {
+    public void update(float interval, MouseInput mouseInput) {
 
         // Set the time on the world
         elapsedTime += interval;
@@ -99,7 +105,17 @@ public class MGRGame implements IGameLogic, IKeyListener {
         player.walk(interval, new Vector3f(direction_x, direction_y, direction_z));
         //Rotation
         player.turn(interval, new Vector3f(rotation_x, rotation_y, rotation_z));
+
+        // Update camera based on mouse
+        if (mouseInput.isRightButtonPressed()) {
+            Vector2f rotVec = mouseInput.getDisplVec();
+            player.turn(interval, new Vector3f(rotVec.x * MOUSE_SENSITIVITY, rotVec.y * MOUSE_SENSITIVITY, 0));
+        }
     }
+
+//    private boolean willPlayerCollideWithWall() {
+//        List<Plane> roomPlanes = world.getWallPlanesFromCurrentRoom(player.getPosition());
+//    }
 
     @Override
     public void render(Window window) {
@@ -148,7 +164,7 @@ public class MGRGame implements IGameLogic, IKeyListener {
         if (world != null) {
             world.cleanUp();
             // Move Player to 0,0
-            player.setPosition(new Vector3f(0.0f, 20.0f, 0.0f));
+            player.setPosition(startPositionPlayer);
             world.init();
         }
     }

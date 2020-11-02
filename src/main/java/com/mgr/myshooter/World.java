@@ -6,10 +6,14 @@ import com.mgr.myshooter.Map.RandomMap;
 import com.mgr.myshooter.Map.Room;
 import com.mgr.myshooter.Map.RoomConnector;
 import org.apache.commons.lang3.tuple.Pair;
+import org.joml.Planef;
 import org.joml.Vector2i;
 import org.joml.Vector3f;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class World {
 
@@ -109,4 +113,10 @@ public class World {
     public int getNumberOfRooms(){
         return map.getRooms().size();
     }
+
+//    public List<Planef> getWallPlanesFromRoomAtPosition(final Vector3f worldPosition){
+//        final Vector2i cellPosition = getPLayerCellPosition(worldPosition);
+//        final List<Planef> planes = map.getPlanesFromRoomAtCell(cellPosition);
+//        return planes;
+//    }
 }
