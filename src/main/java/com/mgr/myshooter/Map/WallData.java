@@ -1,5 +1,7 @@
 package com.mgr.myshooter.Map;
 
+import org.joml.Planef;
+
 public class WallData {
 
     private final float[] vertices;
@@ -7,7 +9,7 @@ public class WallData {
     private final float[] textCoords;
     private final float[] normals;
 
-    public WallData(float[] vertices, int[] indices, float[] textCoords, float[] normals){
+    public WallData(final float[] vertices, final int[] indices, final float[] textCoords, final float[] normals){
         this.vertices = vertices;
         this.indices = indices;
         this.textCoords = textCoords;
@@ -29,4 +31,5 @@ public class WallData {
     public float[] getNormals() {
         return normals;
     }
+
 }

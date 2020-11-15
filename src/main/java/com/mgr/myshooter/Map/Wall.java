@@ -3,6 +3,7 @@ package com.mgr.myshooter.Map;
 import com.mgr.engine.Material;
 import com.mgr.engine.Mesh;
 import org.apache.commons.lang3.tuple.Pair;
+import org.joml.Planef;
 import org.joml.Vector3f;
 
 import javax.management.InvalidAttributeValueException;
@@ -21,6 +22,8 @@ public class Wall extends Mesh {
     private final int numIndices_perWall;
     private final WallOrientation orientation;
     private final boolean clockwise;
+    private Vector3f firstVertex;
+    private Vector3f normal;
 
 
     /*
@@ -153,7 +156,7 @@ public class Wall extends Mesh {
 
     }
 
-    private float[] calculateNormals(float[] vertices, int[]indices) {
+    private float[] calculateNormals(final float[] vertices, final int[]indices) {
 
         HashMap<Integer, Vector3f> normalPerVertex = new HashMap<>();
 
@@ -168,7 +171,12 @@ public class Wall extends Mesh {
             }
             final Vector3f vector1 = triangle[0].sub(triangle[1]);
             final Vector3f vector2 = triangle[2].sub(triangle[1]);
+
+            // We want to invert the normals because they should pointing always INSIDE. This is for the walls of a room.
             final Vector3f normal  = vector1.cross(vector2).normalize();
+            normal.x = -normal.x;
+            normal.y = -normal.y;
+            normal.z = -normal.z;
 
 
             if (!normalPerVertex.containsKey(indices[idx]*3)) { //Multiply by 3 to transform to vertex space, each index represent 3 vertex positions (x,y,z)
@@ -186,7 +194,7 @@ public class Wall extends Mesh {
 
         // Create the float[]  with all normals for all vertices
         // It has to be in the same order that is on the vertices[] so from 0 .. to length of vertices/3 because each vertex has three components
-        float[] normals = new float[vertices.length];
+        final float[] normals = new float[vertices.length];
         int idxNormals = 0;
         for (int idx=0;idx<vertices.length;idx+=3){
             normals[idxNormals]   = normalPerVertex.get(idx).x;
@@ -207,7 +215,20 @@ public class Wall extends Mesh {
         final int[]   indices    = calculateWallIndices();
         final float[] normals    = calculateNormals(vertices, indices);
 
+        // Keep the first Vertex and first normal (because is a plane all normals are actually the same)
+        // This will be used for collision detection.
+        firstVertex = new Vector3f(vertices[0], vertices[1], vertices[2]);
+        normal      = new Vector3f(normals[0], normals[1], normals[2]);
+
         return new WallData(vertices,indices,textCoords,normals);
 
+    }
+
+    public Vector3f getFirstVertex() {
+        return firstVertex;
+    }
+
+    public Vector3f getNormal() {
+        return normal;
     }
 }

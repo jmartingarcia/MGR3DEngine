@@ -10,43 +10,48 @@ public class Camera {
 
     public Vector3f getPosition() {
 
-        return position;
+        return new Vector3f(position);
     }
 
     public Vector3f getRotation() {
 
-        return rotation;
+        return new Vector3f(rotation);
+    }
+
+    public void setRotation(final Vector3f newRotation) {
+
+        rotation = newRotation;
     }
 
     public Vector3f getUpvector() {
 
-        return upvector;
+        return new Vector3f(upvector);
     }
 
-    public void setUpvector(Vector3f upvector) {
+    public void setUpvector(final Vector3f upvector) {
 
         this.upvector = upvector;
     }
 
-    public void setPosition(Vector3f newPosition) {
+    public void setPosition(final Vector3f newPosition) {
         this.position = newPosition;
     }
 
-    public void moveRotation(float offsetX, float offsetY, float offsetZ) {
-        rotation.x += offsetX;
-        rotation.y += offsetY;
-        rotation.z += offsetZ;
+    public void moveRotationBy(final Vector3f offset) {
+        rotation.x += offset.x;
+        rotation.y += offset.y;
+        rotation.z += offset.z;
     }
 
-    public void movePosition(float offsetX, float offsetY, float offsetZ) {
-        if ( offsetZ != 0 ) {
-            position.x += (float)Math.sin(Math.toRadians(rotation.y)) * -1.0f * offsetZ;
-            position.z += (float)Math.cos(Math.toRadians(rotation.y)) * offsetZ;
+    public void movePositionBy(final Vector3f offset) {
+        if ( offset.z != 0 ) {
+            position.x += (float)Math.sin(Math.toRadians(rotation.y)) * -1.0f * offset.z;
+            position.z += (float)Math.cos(Math.toRadians(rotation.y)) * offset.z;
         }
-        if ( offsetX != 0) {
-            position.x += (float)Math.sin(Math.toRadians(rotation.y - 90)) * -1.0f * offsetX;
-            position.z += (float)Math.cos(Math.toRadians(rotation.y - 90)) * offsetX;
+        if ( offset.x != 0) {
+            position.x += (float)Math.sin(Math.toRadians(rotation.y - 90)) * -1.0f * offset.x;
+            position.z += (float)Math.cos(Math.toRadians(rotation.y - 90)) * offset.x;
         }
-        position.y += offsetY;
+        position.y += offset.y;
     }
 }

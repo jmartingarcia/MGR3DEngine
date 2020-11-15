@@ -1,6 +1,7 @@
 package com.mgr.myshooter.Map;
 
 import com.mgr.engine.*;
+import com.mgr.engine.collision.BoundingBox;
 import org.joml.*;
 
 import javax.management.InvalidAttributeValueException;
@@ -325,5 +326,53 @@ public class Room {
             }
         }
     }
+
+    public List<Planef> getAllPlanesFromWalls() {
+        final ArrayList<Planef> list_planes = new ArrayList<>();
+        for (final WallOrientation dir : WallOrientation.values()) {
+            List<Wall> selectedWalls = walls.get(dir);
+            if (selectedWalls == null) continue;
+            for (final Wall wall : selectedWalls) {
+                // Wall has it's vertices in local coords. I need to transform them to world coordinates
+                // prior to calculate the plane for collision detection.
+                final Vector3f wallVertex = wall.getFirstVertex();
+                final Vector3f wallNormal = wall.getNormal();
+                final Vector3f roomWorldPosition = getWorldPosition();
+                // Translating the wall vertex to world position
+                wallVertex.x += roomWorldPosition.x;
+                wallVertex.y += roomWorldPosition.y;
+                wallVertex.z += roomWorldPosition.z;
+                // Create plane
+                list_planes.add(new Planef(wallVertex, wallNormal));
+            }
+        }
+
+        return list_planes;
+    }
+
+    public List<BoundingBox> getAABBFromAllWalls() {
+        final ArrayList<BoundingBox> list_boxes = new ArrayList<>();
+        for (final WallOrientation dir : WallOrientation.values()) {
+            List<Wall> selectedWalls = walls.get(dir);
+            if (selectedWalls == null) continue;
+            for (final Wall wall : selectedWalls) {
+                // Translating the bounding box to world coordinates
+                final BoundingBox wallBox = wall.getBoundingBoxCopy();
+                final Vector3f max = wallBox.getMaxVertex();
+                final Vector3f min = wallBox.getMinVertex();
+                final Vector3f roomWorldPosition = getWorldPosition();
+
+                max.add(roomWorldPosition);
+                min.add(roomWorldPosition);
+
+                // Create plane
+                list_boxes.add(new BoundingBox(min, max));
+            }
+        }
+
+        return list_boxes;
+    }
+
+
 
 }

@@ -3,6 +3,7 @@ package com.mgr.myshooter.Map;
 import com.mgr.configuration.PropertiesLoader;
 import com.mgr.engine.Material;
 import com.mgr.engine.Texture;
+import com.mgr.engine.collision.BoundingBox;
 import org.apache.commons.lang3.tuple.Pair;
 import org.joml.*;
 
@@ -43,6 +44,9 @@ public class RandomMap {
     private Map<WallOrientation, Material> mapMaterials = null;
     private Map<WallOrientation, Material> connectorsMaterials = null;
 
+    //Keys is the room index
+    private HashMap<Integer, List<Planef>> planesPerRoom = new HashMap<>();
+    private HashMap<Integer, List<BoundingBox>> aabbPerRoom = new HashMap<>();
 
     public RandomMap(final int maxPointLights, final int maxSpotLights, final PropertiesLoader props){
         this.maxPointLights = maxPointLights;
@@ -57,7 +61,7 @@ public class RandomMap {
 
 
     public List<RoomConnector> getConnectors() {
-        return uniqueConnectors;
+        return new ArrayList<>(uniqueConnectors);
     }
 
     public List<RoomConnector> getConnectorsOnRoomIndex(final int roomIndex) {
@@ -132,6 +136,7 @@ public class RandomMap {
 
                     room.setWorldPosition(calcRoomWorldPosition(x, y));
                     result.add(room);
+
                 }
 
             }
@@ -146,8 +151,8 @@ public class RandomMap {
 
     private Vector3f calcRoomWorldPosition(final int x, final int y) {
 
-        //return new Vector3f(0.0f,0.0f,0.0f);
-        Vector3f result = new Vector3f(x*(CELL_WIDTH_METERS + SPACE_BETWEEN_ROOMS_METERS), 0.0f, y*(CELL_DEPTH_METERS + SPACE_BETWEEN_ROOMS_METERS));
+        Vector3f result = new Vector3f(x*(CELL_WIDTH_METERS + SPACE_BETWEEN_ROOMS_METERS) + CELL_WIDTH_METERS/2, 0.0f,
+                y*(CELL_DEPTH_METERS + SPACE_BETWEEN_ROOMS_METERS) + CELL_DEPTH_METERS/2);
         return result;
     }
 
@@ -301,7 +306,8 @@ public class RandomMap {
                     connectorWidth = connectorDepth;
                     connectorDepth = tempValue;
                 }
-                RoomConnector newConnector = new RoomConnector(++connectorIndex, 1.0f, 1, 1, connectorWidth,
+
+                final RoomConnector newConnector = new RoomConnector(++connectorIndex, 1.0f, 1, 1, connectorWidth,
                         CELL_HEIGHT_METERS, connectorDepth, 0, connectorsMaterials, dir);
                 newConnector.setWorldPosition(calcConnectorWorldPosition(room, dir, connectorDepth));
                 newConnector.init();
@@ -385,7 +391,7 @@ public class RandomMap {
     }
 
     public List<Room> getRooms() {
-        return rooms;
+        return new ArrayList<>(rooms);
     }
 
     public void cleanUp(){
@@ -398,18 +404,114 @@ public class RandomMap {
         cleanAllMaterials();
     }
 
-    public Vector2i getPLayerCellPosition(final Vector3f worldPlayerPosition){
-        int x_cell = Math.round(worldPlayerPosition.x / CELL_WIDTH_METERS);
-        int y_cell = Math.round(worldPlayerPosition.z / CELL_DEPTH_METERS);
+    public Vector2i getItemCellPosition(final Vector3f itemWorldPosition){
+        int x_cell = (int)(itemWorldPosition.x / (CELL_WIDTH_METERS + SPACE_BETWEEN_ROOMS_METERS));
+        int y_cell = (int)(itemWorldPosition.z / (CELL_DEPTH_METERS + SPACE_BETWEEN_ROOMS_METERS));
         return new Vector2i(x_cell,y_cell);
     }
 
-//    public List<Planef> getPlanesFromRoomAtCell(final Vector2i cellPosition) {
-//        final int roomIndex = mapMatrix[cellPosition.x][cellPosition.y];
-//        final Room room = rooms.stream()
-//                               .filter(r->r.getIndex() == roomIndex)
-//                               .collect(Collectors.toList()).get(0);
-//        final List<RoomConnector> roomConnectors = room.getRoomConnectors();
-//
-//    }
+    private Room getRoomByIndex(final int roomIndex) throws IndexOutOfBoundsException {
+        final List<Room> foundRooms = rooms.stream().filter(r->r.getIndex() == roomIndex).collect(Collectors.toList());
+        if (foundRooms != null)
+            return foundRooms.get(0);
+        else
+            return null;
+    }
+
+    public Vector3f getCenterRoomByIndex(final int roomIndex) {
+        final Room room = getRoomByIndex(roomIndex);
+        if (room != null)
+           return room.getWorldPosition();
+        else
+            return null;
+    }
+
+    private Room getRoomAtCellPosition(final Vector2i cellPosition) {
+         final int roomIndex = mapMatrix[cellPosition.x][cellPosition.y];
+         return getRoomByIndex(roomIndex);
+    }
+
+    private List<Planef> getAllPlanesFromConnectorsOfRoom(final int roomIndex) {
+        final List<RoomConnector> list_connectors = connectors.get(roomIndex);
+        if (list_connectors == null) return null;
+        final ArrayList<Planef> list_planes = new ArrayList<>();
+        for (RoomConnector connector : list_connectors) {
+            List<Planef> connectorPlanes = connector.getAllPlanesFromWalls();
+            list_planes.addAll(connectorPlanes);
+        }
+        return list_planes;
+    }
+
+    private List<BoundingBox> getAABBFromAllConnectorsOfRoom(final int roomIndex) {
+        final List<RoomConnector> list_connectors = connectors.get(roomIndex);
+        if (list_connectors == null) return null;
+        final ArrayList<BoundingBox> list_boxes = new ArrayList<>();
+        for (RoomConnector connector : list_connectors) {
+            List<BoundingBox> connectorAABB = connector.getAABBFromAllWalls();
+            list_boxes.addAll(connectorAABB);
+        }
+        return list_boxes;
+    }
+
+    private List<Planef> getAllWallPlanesForRoomIndex(final int roomIndex) throws IndexOutOfBoundsException {
+
+        List<Planef> result = null;
+
+        if (!planesPerRoom.containsKey(roomIndex)) {
+
+            result = new ArrayList<>();
+
+            // Returns all planes for all wall on room and connectors
+            final Room room = getRoomByIndex(roomIndex);
+            final List<Planef> roomWallPlanes = room.getAllPlanesFromWalls();
+            final List<Planef> connectorsWallPlanes = getAllPlanesFromConnectorsOfRoom(roomIndex);
+
+            result.addAll(roomWallPlanes);
+
+            if (connectorsWallPlanes != null)
+                result.addAll(connectorsWallPlanes);
+
+            planesPerRoom.put(roomIndex, result);
+        } else {
+            result = planesPerRoom.get(roomIndex);
+        }
+
+        return result;
+    }
+
+    private List<BoundingBox> getAABBFromAllWallsForRoomIndex(final int roomIndex) throws IndexOutOfBoundsException {
+
+        List<BoundingBox> result = null;
+
+        if (!aabbPerRoom.containsKey(roomIndex)) {
+
+            result = new ArrayList<>();
+
+            // Returns all planes for all wall on room and connectors
+            final Room room = getRoomByIndex(roomIndex);
+            final List<BoundingBox> roomWallAABB = room.getAABBFromAllWalls();
+            final List<BoundingBox> connectorsWallAABB = getAABBFromAllConnectorsOfRoom(roomIndex);
+
+            result.addAll(roomWallAABB);
+
+            if (connectorsWallAABB != null)
+                result.addAll(connectorsWallAABB);
+
+            aabbPerRoom.put(roomIndex, result);
+        } else {
+            result = aabbPerRoom.get(roomIndex);
+        }
+
+        return result;
+    }
+
+    public List<Planef> getAllWallPlanesAtCellPosition(final Vector2i cellPosition) throws IndexOutOfBoundsException {
+        final int roomIndex = mapMatrix[cellPosition.x][cellPosition.y];
+        return getAllWallPlanesForRoomIndex(roomIndex);
+    }
+
+    public List<BoundingBox> getAllWallAABBAtCellPosition(final Vector2i cellPosition) throws IndexOutOfBoundsException {
+        final int roomIndex = mapMatrix[cellPosition.x][cellPosition.y];
+        return getAABBFromAllWallsForRoomIndex(roomIndex);
+    }
 }

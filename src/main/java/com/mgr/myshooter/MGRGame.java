@@ -35,7 +35,7 @@ public class MGRGame implements IGameLogic, IKeyListener {
 
     private float elapsedTime = 0.0f;
 
-    private final Vector3f startPositionPlayer = new Vector3f(0.0f, 30.0f, 0.0f);
+    private final Vector3f defaultPositionPlayer = new Vector3f(0.0f, 30.0f, 0.0f);
 
     private final float MOUSE_SENSITIVITY = 0.2f;
 
@@ -52,10 +52,13 @@ public class MGRGame implements IGameLogic, IKeyListener {
     @Override
     public void init(Window window) throws Exception {
         properties.init();
+        world.init();
         renderer.init(window, profiler, world);
-        player.setPosition(startPositionPlayer);
+        player.setPosition(defaultPositionPlayer);
         profiler.init(properties);
         window.setKeyListener(this);
+
+        setPlayerInitialPosition();
     }
     
     @Override
@@ -92,7 +95,7 @@ public class MGRGame implements IGameLogic, IKeyListener {
     }
 
     @Override
-    public void update(float interval, MouseInput mouseInput) {
+    public void update(final float interval, final MouseInput mouseInput) {
 
         // Set the time on the world
         elapsedTime += interval;
@@ -102,7 +105,15 @@ public class MGRGame implements IGameLogic, IKeyListener {
         }
 
         //Translation
-        player.walk(interval, new Vector3f(direction_x, direction_y, direction_z));
+        if (direction_x != 0 || direction_y != 0 || direction_z != 0) {
+            final Vector3f moveDirection = new Vector3f(direction_x, direction_y, direction_z);
+            if (!willPlayerCollideWithWall(interval, moveDirection)) {
+                player.move(interval, moveDirection);
+            } else {
+                System.out.println("Collide !!");
+            }
+        }
+
         //Rotation
         player.turn(interval, new Vector3f(rotation_x, rotation_y, rotation_z));
 
@@ -113,9 +124,11 @@ public class MGRGame implements IGameLogic, IKeyListener {
         }
     }
 
-//    private boolean willPlayerCollideWithWall() {
-//        List<Plane> roomPlanes = world.getWallPlanesFromCurrentRoom(player.getPosition());
-//    }
+    private boolean willPlayerCollideWithWall(final float interval, final Vector3f direction) {
+        final Vector3f playerCurrentPosition = new Vector3f(player.getPosition());
+        final Vector3f playerNextPosition = new Vector3f(player.getNextPosition(interval, direction));
+        return world.willPlayerCollideWithWall(player.getBoundingBoxAtPosition(playerNextPosition), playerCurrentPosition);
+    }
 
     @Override
     public void render(Window window) {
@@ -142,7 +155,7 @@ public class MGRGame implements IGameLogic, IKeyListener {
 
         // Map
         // Get player position on the map cell
-        final Vector2i playerCellPosition = world.getPLayerCellPosition(player.getPosition());
+        final Vector2i playerCellPosition = world.getItemCellPosition(player.getPosition());
         final Pair<Integer,int[][]> charMapData = world.getMapPlanAsIntMatrix();
         Integer mapLineSize = charMapData.getLeft();
         int[][] charMap     = charMapData.getRight();
@@ -160,12 +173,18 @@ public class MGRGame implements IGameLogic, IKeyListener {
 
     }
 
+    private void setPlayerInitialPosition() {
+        // Set player initial position inside a world room
+        final Vector3f firstRoomCenter = world.getFirstRoomCenter();
+        // We keep the player height
+        player.setPosition(new Vector3f(firstRoomCenter.x, player.getPosition().y, firstRoomCenter.z));
+    }
+
     private void createNewMap() {
         if (world != null) {
             world.cleanUp();
-            // Move Player to 0,0
-            player.setPosition(startPositionPlayer);
             world.init();
+            setPlayerInitialPosition();
         }
     }
 

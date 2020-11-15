@@ -1,5 +1,6 @@
 package com.mgr.engine;
 
+import com.mgr.engine.collision.BoundingBox;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL43;
 import org.lwjgl.system.MemoryUtil;
@@ -30,25 +31,29 @@ import static org.lwjgl.opengl.GL30.glGenVertexArrays;
 public class Mesh {
 
     protected int vaoId;
-
     protected final List<Integer> vboIdList;
-
     protected int vertexCount;
-
     protected Material material;
-
     protected Vector3f color;
+    protected BoundingBox box;
 
 
 
     public Mesh() {
-
         vboIdList = new ArrayList<>();
         color = new Vector3f(0.0f, 1.0f, 0.0f);
+        box = new BoundingBox();
     }
 
 
     public void init(float[] vertices, int[] indices, float[] normals, float[] textCoords) {
+
+
+        // Calculate the bounding box of the wall
+        for (int i=0;i<vertices.length;i+=3){
+            final Vector3f point = new Vector3f(vertices[i+0],vertices[i+1],vertices[i+2]);
+            box.add(point);
+        }
 
         FloatBuffer posBuffer = null;
         IntBuffer indicesBuffer = null;
@@ -149,6 +154,11 @@ public class Mesh {
     public int getVertexCount() {
 
         return vertexCount;
+    }
+
+    public BoundingBox getBoundingBoxCopy() {
+        // Return a copy of the bounding box since I don't want it to be modified
+        return new BoundingBox(box.getMinVertex(), box.getMaxVertex());
     }
 
     public boolean isTextured() {
