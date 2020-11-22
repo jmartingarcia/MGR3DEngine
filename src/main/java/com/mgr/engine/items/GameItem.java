@@ -1,19 +1,27 @@
-package com.mgr.engine;
+package com.mgr.engine.items;
 
+import com.mgr.engine.Camera;
+import com.mgr.engine.Material;
+import com.mgr.engine.Mesh;
 import com.mgr.engine.collision.BoundingBox;
-import org.apache.commons.lang3.NotImplementedException;
 import org.joml.Vector3f;
 
-public class GameItem {
+public abstract class GameItem {
 
     protected Mesh mesh;
     protected Vector3f position;
     protected float scale;
     protected Vector3f rotation;
+    protected float width;
+    protected float height;
+    protected float depth;
 
     protected final Camera camera;
-    protected float speed = 85.0f;
-    protected float rota_speed = 45.0f;
+    protected float speed;
+    protected float rota_speed;
+    protected float radius; // Used for collision detection
+
+    protected float interactionDistance; // Max distance to be able to interact with the object
 
 
     public GameItem() {
@@ -23,7 +31,14 @@ public class GameItem {
         rotation.x = 0.0f;
         rotation.y = 0.0f;
         rotation.z = 0.0f;
+        speed = 85.0f;
+        rota_speed = 45.0f;
+        radius = 10.0f;
         camera = new Camera();
+        width = 1.0f;
+        height = 1.0f;
+        depth = 1.0f;
+        interactionDistance = 30.0f;
     }
     
     public GameItem(Mesh mesh) {
@@ -38,8 +53,8 @@ public class GameItem {
     }
 
     public void setPosition(final Vector3f position) {
-        this.position = position;
-        camera.setPosition(position);
+        this.position = new Vector3f(position);
+        camera.setPosition(new Vector3f(position));
     }
 
     public float getScale() {
@@ -50,6 +65,18 @@ public class GameItem {
         this.scale = scale;
     }
 
+    public void setRadius(float radius) {
+        this.radius = radius;
+    }
+
+    public float getRadius() {
+        return radius;
+    }
+
+    public Material getMaterial() {
+        return mesh.getMaterial();
+    }
+
     public Vector3f getRotation() {
         return new Vector3f(rotation);
     }
@@ -58,7 +85,7 @@ public class GameItem {
         this.rotation = rotation;
         camera.setRotation(rotation);
     }
-    
+
     public Mesh getMesh() {
         return mesh;
     }
@@ -103,6 +130,7 @@ public class GameItem {
         mesh.cleanUp();
     }
 
+
     // Calculates the next position the item will move but it won't actually move it
     public Vector3f getNextPosition(final float elapsedSeconds, final Vector3f direction) {
         final Vector3f original_position = new Vector3f(camera.getPosition());
@@ -112,30 +140,34 @@ public class GameItem {
         return new_position;
     }
 
-    private Vector3f getPositionOffset(final float elapsedSeconds, final Vector3f direction) {
+    protected Vector3f getPositionOffset(final float elapsedSeconds, final Vector3f direction) {
         return new Vector3f(direction.x * speed * elapsedSeconds,
                 direction.y * speed * elapsedSeconds,
                 direction.z * speed * elapsedSeconds);
     }
 
-    public void move(final float elapsedSeconds, final Vector3f direction){
-        camera.movePositionBy(getPositionOffset(elapsedSeconds, direction));
-        position = camera.getPosition(); // The camera movePositionBy takes into account the rotation
+    public BoundingBox getBoundingBox()  {
+        final BoundingBox box = new BoundingBox();
+        box.add(new Vector3f(position.x - width/2 - radius/2, position.y - height/2 - radius/2, position.z - depth/2 - radius/2 ));
+        box.add(new Vector3f(position.x + width/2 + radius/2, position.y + height/2 +  radius/2, position.z + depth/2 +  radius/2 ));
+        return box;
     }
 
-    public void turn(final float elapsedSeconds, final Vector3f direction){
-        final Vector3f offset_rotation = new Vector3f(direction.x * rota_speed * elapsedSeconds, direction.y * rota_speed * elapsedSeconds, direction.z * rota_speed * elapsedSeconds);
-        rotation.x += offset_rotation.x;
-        rotation.y += offset_rotation.y;
-        rotation.z += offset_rotation.z;
-        camera.setRotation(rotation);
+    public BoundingBox getBoundingBoxAtPosition(final Vector3f newPosition)  {
+        final BoundingBox box = new BoundingBox();
+        box.add(new Vector3f(newPosition.x - width/2 - radius/2, newPosition.y - height/2 - radius/2, newPosition.z - depth/2 - radius/2 ));
+        box.add(new Vector3f(newPosition.x + width/2 + radius/2, newPosition.y + height/2 +  radius/2, newPosition.z + depth/2 +  radius/2 ));
+        return box;
     }
 
-    public BoundingBox getBoundingBox() throws NotImplementedException {
-        throw new NotImplementedException("Method not implemented yet");
+    public int getNumberVertices() {
+        return mesh.getNumberVertices();
     }
 
-    public BoundingBox getBoundingBoxAtPosition(final Vector3f position) throws NotImplementedException {
-        throw new NotImplementedException("Method not implemented yet");
+    public int getNumberIndices() {
+        return mesh.getNumberIndices();
     }
+
+    public abstract void update(final float interval);
+
 }

@@ -1,5 +1,6 @@
 package com.mgr.engine;
 
+import com.mgr.engine.items.GameItem;
 import com.mgr.myshooter.Map.Room;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -52,6 +53,13 @@ public class Transformation {
         public Matrix4f getModelViewMatrix(Room room, Matrix4f viewMatrix) {
             modelViewMatrix.identity().translate(room.getWorldPosition())
                     .scale(room.getScale());
+            Matrix4f viewCurr = new Matrix4f(viewMatrix);
+            return viewCurr.mul(modelViewMatrix);
+        }
+
+        public Matrix4f getModelViewMatrix(final GameItem item, Matrix4f viewMatrix) {
+            modelViewMatrix.identity().translate(item.getPosition())
+                    .scale(item.getScale());
             Matrix4f viewCurr = new Matrix4f(viewMatrix);
             return viewCurr.mul(modelViewMatrix);
         }

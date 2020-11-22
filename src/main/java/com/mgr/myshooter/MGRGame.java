@@ -22,21 +22,13 @@ public class MGRGame implements IGameLogic, IKeyListener {
     
 
     private final Renderer renderer;
-
     private final World world;
-
     private final Player player;
-
     private boolean showProfilerData = false;
-
     private Profiler profiler;
-
     private PropertiesLoader properties;
-
     private float elapsedTime = 0.0f;
-
     private final Vector3f defaultPositionPlayer = new Vector3f(0.0f, 30.0f, 0.0f);
-
     private final float MOUSE_SENSITIVITY = 0.2f;
 
 
@@ -104,24 +96,33 @@ public class MGRGame implements IGameLogic, IKeyListener {
             world.addTime(60);
         }
 
+        // Update player status
+        movePlayer(interval, mouseInput);
+
+        // Update all items status
+        world.updateItemsStatus(interval);
+
+    }
+
+    private void movePlayer(final float interval, final MouseInput mouseInput){
+
         //Translation
+        Vector3f moveDirection = new Vector3f(direction_x, direction_y, direction_z);
         if (direction_x != 0 || direction_y != 0 || direction_z != 0) {
-            final Vector3f moveDirection = new Vector3f(direction_x, direction_y, direction_z);
-            if (!willPlayerCollideWithWall(interval, moveDirection)) {
-                player.move(interval, moveDirection);
-            } else {
-                System.out.println("Collide !!");
+            if (willPlayerCollideWithWall(interval, moveDirection)) {
+                moveDirection = new Vector3f(0.0f, 0.0f, 0.0f); // Cannot move so set translation to zero
             }
         }
 
-        //Rotation
-        player.turn(interval, new Vector3f(rotation_x, rotation_y, rotation_z));
-
+        // Rotation
+        Vector3f rotation = new Vector3f(rotation_x, rotation_y, rotation_z); // by default keyboard rotation
         // Update camera based on mouse
-        if (mouseInput.isRightButtonPressed()) {
+        if (mouseInput.isRightButtonPressed()) { // if mouse rotation then ignore keyboard
             Vector2f rotVec = mouseInput.getDisplVec();
-            player.turn(interval, new Vector3f(rotVec.x * MOUSE_SENSITIVITY, rotVec.y * MOUSE_SENSITIVITY, 0));
+            rotation = new Vector3f(rotVec.x * MOUSE_SENSITIVITY, rotVec.y * MOUSE_SENSITIVITY, 0);
         }
+
+        player.updatePlayer(interval, moveDirection, rotation);
     }
 
     private boolean willPlayerCollideWithWall(final float interval, final Vector3f direction) {
@@ -188,6 +189,10 @@ public class MGRGame implements IGameLogic, IKeyListener {
         }
     }
 
+    private void playerInteractClosestObject() {
+         world.playerInteractClosestItem(player.getPosition());
+    }
+
     @Override
     public void cleanUp(){
         world.cleanUp();
@@ -210,6 +215,8 @@ public class MGRGame implements IGameLogic, IKeyListener {
             printProfileData();
         } else if (keyCode == GLFW_KEY_I) {
             createNewMap();
+        } else if (keyCode == GLFW_KEY_E) {
+            playerInteractClosestObject();
         }
     }
 

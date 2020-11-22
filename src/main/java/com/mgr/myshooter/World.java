@@ -1,15 +1,15 @@
 package com.mgr.myshooter;
 
 import com.mgr.configuration.PropertiesLoader;
-import com.mgr.engine.DirectionalLight;
-import com.mgr.engine.GameItem;
+import com.mgr.engine.items.GameItem;
+import com.mgr.engine.light.DirectionalLight;
 import com.mgr.engine.collision.BoundingBox;
 import com.mgr.engine.collision.CollisionDetector;
+import com.mgr.myshooter.Map.DoomDoor;
 import com.mgr.myshooter.Map.RandomMap;
 import com.mgr.myshooter.Map.Room;
 import com.mgr.myshooter.Map.RoomConnector;
 import org.apache.commons.lang3.tuple.Pair;
-import org.joml.Planef;
 import org.joml.Vector2i;
 import org.joml.Vector3f;
 
@@ -17,7 +17,7 @@ import java.util.List;
 
 public class World {
 
-    private final Integer MAX_NUMBER_ROOMS = 20;
+    private final Integer MAX_NUMBER_ROOMS = 50;
 
     // The shader only have space for 5 lights of each type (point light and sport light)
     // This limit is just by the code (constants), actually hardware might support much more.
@@ -49,6 +49,10 @@ public class World {
 
     public List<RoomConnector> getMapRoomConnectors() {
         return map.getConnectors();
+    }
+
+    public List<DoomDoor> getDoors() {
+        return map.getDoors();
     }
 
     public Pair<Integer, int[][]> getMapPlanAsIntMatrix() {
@@ -120,17 +124,54 @@ public class World {
         final Vector2i itemCellPosition = getItemCellPosition(currentPosition);
 
         // Check collision against walls
-        List<BoundingBox> allWallAABB = null;
-        try {
-            allWallAABB = map.getAllWallAABBAtCellPosition(itemCellPosition);
-        } catch (IndexOutOfBoundsException index_exception) {
-            return false;
-        }
+        List<BoundingBox> allWallAABB = map.getAllWallAABBAtCellPosition(itemCellPosition);
+        // Also against doors
+        List<BoundingBox> allDoorsOnRoom = map.getAllDoorsAABBAtCellPosition(itemCellPosition);
+
+        allWallAABB.addAll(allDoorsOnRoom);
 
         return CollisionDetector.willItemCollideAgainstAABB(box, allWallAABB);
     }
 
+    public List<DoomDoor> getDoorsOnTheRoom(final Vector3f currentPosition) {
+        // Get item current cell position map (in cells)
+        final Vector2i itemCellPosition = getItemCellPosition(currentPosition);
+        return map.getAllDoorsAtCellPosition(itemCellPosition);
+    }
+
     public Vector3f getFirstRoomCenter() {
         return map.getCenterRoomByIndex(1);
+    }
+
+    public void playerInteractClosestItem(final Vector3f playerPosition) {
+
+        // Get closest doors
+        final List<DoomDoor> doors = getDoorsOnTheRoom(playerPosition);
+        DoomDoor closestDoor = null;
+        float minDistance = 9999999.99f;
+
+
+        for (DoomDoor door : doors) {
+            final Vector3f doorPosition = door.getPosition();
+            final float distance = (doorPosition.x - playerPosition.x)*(doorPosition.x - playerPosition.x) +
+                                   (doorPosition.y - playerPosition.y)*(doorPosition.y - playerPosition.y) +
+                                   (doorPosition.z - playerPosition.z)*(doorPosition.z - playerPosition.z);
+            if (distance <= minDistance){
+                minDistance = distance;
+                closestDoor = door;
+            }
+        }
+
+        if (closestDoor!=null) {
+            if (closestDoor.canPlayerInteractAtDistance((float)Math.sqrt(minDistance))) {
+                closestDoor.changeStatus();
+            }
+        }
+
+    }
+
+    public void updateItemsStatus(final float interval) {
+         // Update Doors Status
+        map.updateDoorsStatus(interval);
     }
 }

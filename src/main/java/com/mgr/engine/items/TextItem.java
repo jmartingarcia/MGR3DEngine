@@ -1,4 +1,10 @@
-package com.mgr.engine;
+package com.mgr.engine.items;
+
+import com.mgr.engine.Material;
+import com.mgr.engine.Mesh;
+import com.mgr.engine.Texture;
+import com.mgr.engine.Utils;
+import com.mgr.engine.items.GameItem;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -102,5 +108,9 @@ public class TextItem extends GameItem {
     public void cleanUp() {
         super.cleanUp();
         texture.cleanup();
+    }
+
+    public void update(final float interval) {
+        return;
     }
 }

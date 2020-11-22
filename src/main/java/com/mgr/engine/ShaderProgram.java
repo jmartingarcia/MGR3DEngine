@@ -1,5 +1,8 @@
 package com.mgr.engine;
 
+import com.mgr.engine.light.DirectionalLight;
+import com.mgr.engine.light.PointLight;
+import com.mgr.engine.light.SpotLight;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;

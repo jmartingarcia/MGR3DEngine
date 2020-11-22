@@ -2,6 +2,7 @@ package com.mgr.engine;
 
 
 import com.mgr.configuration.PropertiesLoader;
+import com.mgr.engine.items.TextItem;
 import org.joml.Vector3f;
 
 import java.util.ArrayList;

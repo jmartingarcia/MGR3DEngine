@@ -1,6 +1,9 @@
 package com.mgr.myshooter;
 
 import com.mgr.engine.*;
+import com.mgr.engine.items.TextItem;
+import com.mgr.engine.light.DirectionalLight;
+import com.mgr.myshooter.Map.DoomDoor;
 import com.mgr.myshooter.Map.Room;
 import com.mgr.myshooter.Map.RoomConnector;
 import org.joml.Matrix4f;
@@ -150,6 +153,8 @@ public class Renderer  {
         shaderProgram.setUniform("directionalLight", currDirLight);
 
 
+        // TODO - BEGIN All this needs to be moved to a method called render on the World object and RandomMap
+
         // Get all rooms from the map to draw
         for (Room room : world.getMapRooms()){
             Matrix4f modelViewMatrix = transformation.getModelViewMatrix(room, viewMatrix) ;
@@ -163,6 +168,16 @@ public class Renderer  {
             shaderProgram.setUniform("modelViewMatrix", modelViewMatrix);
             connector.render(shaderProgram, viewMatrix);
         }
+
+        // Get all doors
+        for (DoomDoor door : world.getDoors()) {
+            Matrix4f modelViewMatrix = transformation.getModelViewMatrix(door, viewMatrix) ;
+            shaderProgram.setUniform("modelViewMatrix", modelViewMatrix);
+            door.render(shaderProgram, viewMatrix);
+        }
+
+        // TODO - END ------------------------------------------------------------------------------------
+
 
         shaderProgram.unbind();
     }

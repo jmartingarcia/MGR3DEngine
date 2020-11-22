@@ -35,4 +35,8 @@ public class RoomConnector extends Room {
         }
     }
 
+    public WallOrientation getDestRoomDirection() {
+        return destRoomDirection;
+    }
+
 }

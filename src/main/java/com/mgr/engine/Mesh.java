@@ -36,7 +36,8 @@ public class Mesh {
     protected Material material;
     protected Vector3f color;
     protected BoundingBox box;
-
+    protected int numberVertices;
+    protected int numberIndices;
 
 
     public Mesh() {
@@ -48,6 +49,8 @@ public class Mesh {
 
     public void init(float[] vertices, int[] indices, float[] normals, float[] textCoords) {
 
+        numberVertices = vertices.length/3; //x,y,z makes one vertex
+        numberIndices  = indices.length;
 
         // Calculate the bounding box of the wall
         for (int i=0;i<vertices.length;i+=3){
@@ -151,9 +154,12 @@ public class Mesh {
         return vaoId;
     }
 
-    public int getVertexCount() {
+    public int getNumberVertices() {
+        return numberVertices;
+    }
 
-        return vertexCount;
+    public int getNumberIndices() {
+        return numberIndices;
     }
 
     public BoundingBox getBoundingBoxCopy() {

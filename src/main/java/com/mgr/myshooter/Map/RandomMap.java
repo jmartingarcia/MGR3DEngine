@@ -9,6 +9,7 @@ import org.joml.*;
 
 import javax.management.InvalidAttributeValueException;
 import java.lang.Math;
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -44,9 +45,15 @@ public class RandomMap {
     private Map<WallOrientation, Material> mapMaterials = null;
     private Map<WallOrientation, Material> connectorsMaterials = null;
 
-    //Keys is the room index
-    private HashMap<Integer, List<Planef>> planesPerRoom = new HashMap<>();
+    //Key is the room index
     private HashMap<Integer, List<BoundingBox>> aabbPerRoom = new HashMap<>();
+
+    //Key is the connector index
+    private HashMap<Integer, DoomDoor> doorPerConnector = new HashMap<>();
+    private List<Material> doorMaterials = new ArrayList<>();
+
+
+
 
     public RandomMap(final int maxPointLights, final int maxSpotLights, final PropertiesLoader props){
         this.maxPointLights = maxPointLights;
@@ -62,6 +69,10 @@ public class RandomMap {
 
     public List<RoomConnector> getConnectors() {
         return new ArrayList<>(uniqueConnectors);
+    }
+
+    public List<DoomDoor> getDoors() {
+        return new ArrayList<>(doorPerConnector.values());
     }
 
     public List<RoomConnector> getConnectorsOnRoomIndex(final int roomIndex) {
@@ -167,6 +178,11 @@ public class RandomMap {
                 if (material != null) material.cleanUp();
             }
         }
+
+        for (Material material : doorMaterials) {
+            material.cleanUp();
+        }
+        doorMaterials.clear();
     }
 
 
@@ -253,6 +269,7 @@ public class RandomMap {
             // Create Materials for rooms
             if (mapMaterials != null || connectorsMaterials != null)
                 cleanAllMaterials();
+
             mapMaterials = generateMaterialsForRooms();
 
             // Create Materials for connectors
@@ -264,6 +281,10 @@ public class RandomMap {
             // same connector will be referenced more than once on the hashmap.
             // For speed in some processes I need the unique list of connectors. This method call generates the unique list.
             uniqueConnectors = generateUniqueConnectors();
+
+            generateDoors();
+
+            generateAllAABBForMap();
 
         } catch (Exception ex) {
             System.out.println("ERROR generating random map " + ex.getMessage());
@@ -308,7 +329,7 @@ public class RandomMap {
                 }
 
                 final RoomConnector newConnector = new RoomConnector(++connectorIndex, 1.0f, 1, 1, connectorWidth,
-                        CELL_HEIGHT_METERS, connectorDepth, 0, connectorsMaterials, dir);
+                        CELL_HEIGHT_METERS, connectorDepth, connectorWidth, connectorsMaterials, dir);
                 newConnector.setWorldPosition(calcConnectorWorldPosition(room, dir, connectorDepth));
                 newConnector.init();
 
@@ -397,6 +418,7 @@ public class RandomMap {
     public void cleanUp(){
         totalGeneratedRooms = 0;
         mapMatrix = new int[MAX_CELLS][MAX_CELLS];
+        destroyDoors();
         for (Room room : rooms)
             room.cleanUp();
         for (RoomConnector connector : uniqueConnectors)
@@ -431,17 +453,6 @@ public class RandomMap {
          return getRoomByIndex(roomIndex);
     }
 
-    private List<Planef> getAllPlanesFromConnectorsOfRoom(final int roomIndex) {
-        final List<RoomConnector> list_connectors = connectors.get(roomIndex);
-        if (list_connectors == null) return null;
-        final ArrayList<Planef> list_planes = new ArrayList<>();
-        for (RoomConnector connector : list_connectors) {
-            List<Planef> connectorPlanes = connector.getAllPlanesFromWalls();
-            list_planes.addAll(connectorPlanes);
-        }
-        return list_planes;
-    }
-
     private List<BoundingBox> getAABBFromAllConnectorsOfRoom(final int roomIndex) {
         final List<RoomConnector> list_connectors = connectors.get(roomIndex);
         if (list_connectors == null) return null;
@@ -453,65 +464,107 @@ public class RandomMap {
         return list_boxes;
     }
 
-    private List<Planef> getAllWallPlanesForRoomIndex(final int roomIndex) throws IndexOutOfBoundsException {
+    private void generateAllAABBForMap() throws IndexOutOfBoundsException {
 
-        List<Planef> result = null;
+        aabbPerRoom.clear();
 
-        if (!planesPerRoom.containsKey(roomIndex)) {
-
-            result = new ArrayList<>();
-
-            // Returns all planes for all wall on room and connectors
-            final Room room = getRoomByIndex(roomIndex);
-            final List<Planef> roomWallPlanes = room.getAllPlanesFromWalls();
-            final List<Planef> connectorsWallPlanes = getAllPlanesFromConnectorsOfRoom(roomIndex);
-
-            result.addAll(roomWallPlanes);
-
-            if (connectorsWallPlanes != null)
-                result.addAll(connectorsWallPlanes);
-
-            planesPerRoom.put(roomIndex, result);
-        } else {
-            result = planesPerRoom.get(roomIndex);
-        }
-
-        return result;
-    }
-
-    private List<BoundingBox> getAABBFromAllWallsForRoomIndex(final int roomIndex) throws IndexOutOfBoundsException {
-
-        List<BoundingBox> result = null;
-
-        if (!aabbPerRoom.containsKey(roomIndex)) {
-
-            result = new ArrayList<>();
-
-            // Returns all planes for all wall on room and connectors
-            final Room room = getRoomByIndex(roomIndex);
+        for (Room room : rooms) {
+            final ArrayList<BoundingBox> result = new ArrayList<>();
             final List<BoundingBox> roomWallAABB = room.getAABBFromAllWalls();
-            final List<BoundingBox> connectorsWallAABB = getAABBFromAllConnectorsOfRoom(roomIndex);
+            final List<BoundingBox> connectorsWallAABB = getAABBFromAllConnectorsOfRoom(room.getIndex());
 
             result.addAll(roomWallAABB);
 
             if (connectorsWallAABB != null)
                 result.addAll(connectorsWallAABB);
 
-            aabbPerRoom.put(roomIndex, result);
-        } else {
-            result = aabbPerRoom.get(roomIndex);
+            aabbPerRoom.put(room.getIndex(), result);
         }
-
-        return result;
     }
 
-    public List<Planef> getAllWallPlanesAtCellPosition(final Vector2i cellPosition) throws IndexOutOfBoundsException {
-        final int roomIndex = mapMatrix[cellPosition.x][cellPosition.y];
-        return getAllWallPlanesForRoomIndex(roomIndex);
+    private List<BoundingBox> getAABBFromAllWallsForRoomIndex(final int roomIndex) throws IndexOutOfBoundsException {
+        return new ArrayList<>(aabbPerRoom.get(roomIndex));
     }
+
 
     public List<BoundingBox> getAllWallAABBAtCellPosition(final Vector2i cellPosition) throws IndexOutOfBoundsException {
         final int roomIndex = mapMatrix[cellPosition.x][cellPosition.y];
         return getAABBFromAllWallsForRoomIndex(roomIndex);
     }
+
+    private void generateDoors() throws Exception {
+
+        destroyDoors();
+
+        final Texture doorTexture  = new Texture(this.props.getBaseTexturesFolder() + "\\doomDoor.png");
+        final Material doorMaterial = new Material(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f),
+                                                   new Vector4f(1.0f, 1.0f, 1.0f, 1.0f),
+                                                   new Vector4f(1.0f, 1.0f, 1.0f, 1.0f),
+                                                   doorTexture, 0.8f);
+        doorMaterials.add(doorMaterial);
+
+        // One door is created in each connector
+        for (RoomConnector connector : uniqueConnectors){
+            final Vector3f doorCenter = new Vector3f(connector.getWorldPosition());
+            doorCenter.y += (connector.roomHeight/2);
+            final DoomDoor door = new DoomDoor(doorCenter, connector.doorWidth,connector.roomHeight,
+                        connector.roomDepth/5, doorMaterial, connector.getDestRoomDirection());
+            doorPerConnector.put(connector.getIndex(), door);
+        }
+    }
+
+    private void destroyDoors() {
+        final List<DoomDoor> doors = new ArrayList<>(doorPerConnector.values());
+        for (DoomDoor door : doors) {
+            door.cleanUp();
+        }
+    }
+
+    private List<BoundingBox> getAABBFromAllDoorsForRoomIndex(final int roomIndex) {
+
+        final ArrayList<BoundingBox> doorsAABB = new ArrayList<>();
+        if (connectors.size() > 0) {
+            // First get all connectors for room
+            List<RoomConnector> listConnectors = connectors.get(roomIndex);
+            // Get all doors associated to the connector
+            for (RoomConnector connector : listConnectors) {
+                final DoomDoor door = doorPerConnector.get(connector.getIndex());
+                doorsAABB.add(door.getBoundingBox());
+            }
+        }
+        return doorsAABB;
+    }
+
+    private List<DoomDoor> getAllDoorsFromRoom(final int roomIndex) {
+
+        final ArrayList<DoomDoor> doors = new ArrayList<>();
+        if (connectors.size() > 0) {
+            // First get all connectors for room
+            List<RoomConnector> listConnectors = connectors.get(roomIndex);
+            // Get all doors associated to the connector
+            for (RoomConnector connector : listConnectors) {
+                final DoomDoor door = doorPerConnector.get(connector.getIndex());
+                doors.add(door);
+            }
+        }
+        return doors;
+    }
+
+    public List<BoundingBox> getAllDoorsAABBAtCellPosition(final Vector2i cellPosition) throws IndexOutOfBoundsException {
+        final int roomIndex = mapMatrix[cellPosition.x][cellPosition.y];
+        return getAABBFromAllDoorsForRoomIndex(roomIndex);
+    }
+
+    public List<DoomDoor> getAllDoorsAtCellPosition(final Vector2i cellPosition) throws IndexOutOfBoundsException {
+        final int roomIndex = mapMatrix[cellPosition.x][cellPosition.y];
+        return getAllDoorsFromRoom(roomIndex);
+    }
+
+    public void updateDoorsStatus(final float interval) {
+        final List<DoomDoor> doors = new ArrayList<>(doorPerConnector.values());
+        for (DoomDoor door : doors) {
+            door.update(interval);
+        }
+    }
+
 }
