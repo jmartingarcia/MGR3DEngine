@@ -14,17 +14,11 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 public class Window {
 
     private final String title;
-
     private int width;
-
     private int height;
-
     private long windowHandle;
-
     private boolean resized;
-
     private boolean vSync;
-
     private IKeyListener keyListener;
 
 
@@ -59,6 +53,7 @@ public class Window {
         if (windowHandle == NULL) {
             throw new RuntimeException("Failed to create the GLFW window");
         }
+
 
         // Setup resize callback
         glfwSetFramebufferSizeCallback(windowHandle, (window, width, height) -> {

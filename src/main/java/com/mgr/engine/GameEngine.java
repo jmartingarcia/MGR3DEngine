@@ -3,15 +3,10 @@ package com.mgr.engine;
 public class GameEngine implements Runnable {
 
     public static final int TARGET_FPS = 75;
-
     public static final int TARGET_UPS = 30;
-
     private final Window window;
-
     private final Timer timer;
-
     private final IGameLogic gameLogic;
-
     private MouseInput mouseInput;
 
 
@@ -47,10 +42,24 @@ public class GameEngine implements Runnable {
         float elapsedTime;
         float accumulator = 0f;
         float interval = 1f / TARGET_UPS; //Updates per second (separate then frame per second). This is more for physics calculation. More important!
+        int   numberFrames = 0;
+        double fps_time = 0;
 
         boolean running = true;
         while (running && !window.windowShouldClose()) {
+
             elapsedTime = timer.getElapsedTime();
+
+            // Calculate the actual frames per second
+            if (fps_time >= 1.0f){
+                gameLogic.setActualFramesPerSecond(numberFrames);
+                numberFrames = 0;
+                fps_time = 0;
+            }
+
+            fps_time += elapsedTime;
+            numberFrames++;
+
             accumulator += elapsedTime;
 
             input();

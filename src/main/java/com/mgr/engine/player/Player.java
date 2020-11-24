@@ -1,10 +1,13 @@
-package com.mgr.engine;
+package com.mgr.engine.player;
 
+import com.mgr.engine.Texture;
 import com.mgr.engine.items.GameItem;
 import org.joml.Vector3f;
 
 
 public class Player extends GameItem {
+
+    private Crosshair crosshair;
 
     public Player(){
 
@@ -13,6 +16,11 @@ public class Player extends GameItem {
         width = 2.0f;
         height = 2.0f;
         depth = 2.0f;
+        crosshair = null;
+    }
+
+    public void createCrosshair(final Texture crosshairTexture) {
+        crosshair = new Crosshair(crosshairTexture, 5.0f, 5.0f);
     }
 
     private void move(final float elapsedSeconds, final Vector3f direction){
@@ -35,6 +43,10 @@ public class Player extends GameItem {
     public void updatePlayer(final float interval, final Vector3f translation, final Vector3f rotation) {
         move(interval, translation);
         turn(interval, rotation);
+    }
+
+    public Crosshair getCrosshair() {
+        return crosshair;
     }
 
 }

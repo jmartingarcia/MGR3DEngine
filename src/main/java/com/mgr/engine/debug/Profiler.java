@@ -1,4 +1,4 @@
-package com.mgr.engine;
+package com.mgr.engine.debug;
 
 
 import com.mgr.configuration.PropertiesLoader;

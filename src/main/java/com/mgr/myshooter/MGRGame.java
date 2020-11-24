@@ -4,6 +4,8 @@ import com.mgr.configuration.PropertiesLoader;
 import com.mgr.engine.IGameLogic;
 import com.mgr.engine.Window;
 import com.mgr.engine.*;
+import com.mgr.engine.debug.Profiler;
+import com.mgr.engine.player.Player;
 import org.apache.commons.lang3.tuple.Pair;
 import org.joml.Vector2f;
 import org.joml.Vector2i;
@@ -30,10 +32,11 @@ public class MGRGame implements IGameLogic, IKeyListener {
     private float elapsedTime = 0.0f;
     private final Vector3f defaultPositionPlayer = new Vector3f(0.0f, 30.0f, 0.0f);
     private final float MOUSE_SENSITIVITY = 0.2f;
+    private float fps;
 
 
 
-    public MGRGame() {
+    public MGRGame() throws Exception {
         properties = new PropertiesLoader();
         world      = new World(properties);
         renderer   = new Renderer();
@@ -51,6 +54,9 @@ public class MGRGame implements IGameLogic, IKeyListener {
         window.setKeyListener(this);
 
         setPlayerInitialPosition();
+
+        final Texture crosshairTexture = new Texture(properties.getBaseTexturesFolder() + "\\crosshair.png");
+        player.createCrosshair(crosshairTexture);
     }
     
     @Override
@@ -145,8 +151,12 @@ public class MGRGame implements IGameLogic, IKeyListener {
 
     private void prepareProfileData() {
 
+        // FPS Info
+        String text = "FPS: " + fps;
+        profiler.setProfilerEntry("FPS",text);
+
         // Player position data
-        String text = "( X: " + player.getPosition().x + " , Y: " + player.getPosition().y + " , Z: " + player.getPosition().z + " , RX: " +
+        text = "( X: " + player.getPosition().x + " , Y: " + player.getPosition().y + " , Z: " + player.getPosition().z + " , RX: " +
                 player.getRotation().x + " , RY: " + player.getRotation().y + " , RZ: " + player.getRotation().z + " )";
         profiler.setProfilerEntry("CAMERA", text);
 
@@ -218,6 +228,11 @@ public class MGRGame implements IGameLogic, IKeyListener {
         } else if (keyCode == GLFW_KEY_E) {
             playerInteractClosestObject();
         }
+    }
+
+    @Override
+    public void setActualFramesPerSecond(final float fps){
+        this.fps = fps;
     }
 
 }

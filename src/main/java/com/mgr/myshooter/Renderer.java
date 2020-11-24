@@ -1,6 +1,8 @@
 package com.mgr.myshooter;
 
 import com.mgr.engine.*;
+import com.mgr.engine.debug.Profiler;
+import com.mgr.engine.items.GameItem;
 import com.mgr.engine.items.TextItem;
 import com.mgr.engine.light.DirectionalLight;
 import com.mgr.myshooter.Map.DoomDoor;
@@ -9,6 +11,8 @@ import com.mgr.myshooter.Map.RoomConnector;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
+
+import java.util.List;
 
 import static org.lwjgl.opengl.GL11.*;
 
@@ -202,6 +206,7 @@ public class Renderer  {
 
         profilerProgram.unbind();
     }
+
 
     public void cleanUp() {
         if (shaderProgram != null) {
