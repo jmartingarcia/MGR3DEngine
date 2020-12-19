@@ -1,13 +1,22 @@
 package com.mgr.engine.player;
 
+import com.mgr.engine.ShaderProgram;
 import com.mgr.engine.Texture;
-import com.mgr.engine.items.GameItem;
+import com.mgr.engine.Transformation;
+import com.mgr.engine.Utils;
+import com.mgr.engine.items.*;
+import org.joml.Matrix4f;
 import org.joml.Vector3f;
+
+import javax.management.AttributeNotFoundException;
+import java.security.InvalidParameterException;
 
 
 public class Player extends GameItem {
 
-    private Crosshair crosshair;
+    private IGameItem crosshair;
+    private boolean isMainPlayer;
+    private ShaderProgram shaderProgram;
 
     public Player(){
 
@@ -17,10 +26,36 @@ public class Player extends GameItem {
         height = 2.0f;
         depth = 2.0f;
         crosshair = null;
+        isMainPlayer = false;
     }
 
-    public void createCrosshair(final Texture crosshairTexture) {
-        crosshair = new Crosshair(crosshairTexture, 5.0f, 5.0f);
+    public Player(boolean isMainPlayer) {
+        this();
+        this.isMainPlayer = isMainPlayer;
+    }
+
+    private void createCrosshairShaderProgram() throws Exception {
+        shaderProgram = new ShaderProgram();
+        shaderProgram.createVertexShader(Utils.loadResource("/Shaders/simple_vertex.vs"));
+        shaderProgram.createFragmentShader(Utils.loadResource("/Shaders/simple_fragment.fs"));
+        shaderProgram.link();
+
+        // Create uniforms for Ortographic-model projection matrix and base color
+        shaderProgram.createUniform("projModelMatrix");
+        shaderProgram.createUniform("color");
+        shaderProgram.createUniform("texture_sampler");
+    }
+
+    public void createCrosshair(final Texture crosshairTexture) throws Exception {
+
+        final GameItemProperties itemProperties = new GameItemProperties();
+        itemProperties.setWidth(100.0f);
+        itemProperties.setHeight(100.0f);
+        itemProperties.setItemTexture(crosshairTexture);
+
+        crosshair =  GameItemFactory.createItem(GameItemType.CROSSHAIR, itemProperties);
+
+        createCrosshairShaderProgram();
     }
 
     private void move(final float elapsedSeconds, final Vector3f direction){
@@ -45,8 +80,42 @@ public class Player extends GameItem {
         turn(interval, rotation);
     }
 
-    public Crosshair getCrosshair() {
+    public IGameItem getCrosshair() {
         return crosshair;
+    }
+
+    public void cleanUp() {
+        if (crosshair != null) {
+            crosshair.cleanUp();
+        }
+    }
+
+    public void render(final Transformation transformation, final float windowWidth, final float windowHeight) {
+
+        if (isMainPlayer) {
+            renderCrosshair(transformation, windowWidth, windowHeight);
+        }
+    }
+
+    private void renderCrosshair(final Transformation transformation, final float windowWidth, final float windowHeight) {
+
+        shaderProgram.bind();
+
+        shaderProgram.setUniform("texture_sampler", 0);
+
+        // Set crosshair to the center of the screen
+        crosshair.setPosition(new Vector3f(windowWidth/2 - crosshair.getWidth()/2, windowHeight/2 - crosshair.getHeight()/2,0));
+
+        Matrix4f ortho = transformation.getOrthoProjectionMatrix(0, windowWidth, windowHeight, 0);
+
+        // Set orthographic and model matrix for this text item
+        Matrix4f projModelMatrix = transformation.getOrtoProjModelMatrix(crosshair, ortho);
+        shaderProgram.setUniform("projModelMatrix", projModelMatrix);
+        shaderProgram.setUniform("color", crosshair.getMesh().getMaterial().getAmbientColor());
+
+        crosshair.render();
+
+        shaderProgram.unbind();
     }
 
 }

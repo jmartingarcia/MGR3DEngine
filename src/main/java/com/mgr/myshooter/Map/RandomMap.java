@@ -1,9 +1,9 @@
 package com.mgr.myshooter.Map;
 
 import com.mgr.configuration.PropertiesLoader;
-import com.mgr.engine.Material;
-import com.mgr.engine.Texture;
+import com.mgr.engine.*;
 import com.mgr.engine.collision.BoundingBox;
+import com.mgr.engine.light.DirectionalLight;
 import org.apache.commons.lang3.tuple.Pair;
 import org.joml.*;
 
@@ -52,6 +52,7 @@ public class RandomMap {
     private HashMap<Integer, DoomDoor> doorPerConnector = new HashMap<>();
     private List<Material> doorMaterials = new ArrayList<>();
 
+    private ShaderProgram shaderProgram;
 
 
 
@@ -66,6 +67,9 @@ public class RandomMap {
         return random.nextInt(max - min) + min;
     }
 
+    public void setShaderProgram(final ShaderProgram shader) {
+        shaderProgram = shader;
+    }
 
     public List<RoomConnector> getConnectors() {
         return new ArrayList<>(uniqueConnectors);
@@ -565,6 +569,86 @@ public class RandomMap {
         for (DoomDoor door : doors) {
             door.update(interval);
         }
+    }
+
+    private List<DoomDoor> getDoorsOnTheRoom(final Vector3f worldPosition) {
+        final Vector2i roomPosition = getItemCellPosition(worldPosition);
+        return getAllDoorsAtCellPosition(roomPosition);
+    }
+
+    public void playerInteractItems(final Vector3f playerPosition) {
+
+        final List<DoomDoor> doors = getDoorsOnTheRoom(playerPosition);
+        DoomDoor closestDoor = null;
+        float minDistance = 9999999.99f;
+
+
+        for (DoomDoor door : doors) {
+            final Vector3f doorPosition = door.getPosition();
+            final float distance = (doorPosition.x - playerPosition.x)*(doorPosition.x - playerPosition.x) +
+                    (doorPosition.y - playerPosition.y)*(doorPosition.y - playerPosition.y) +
+                    (doorPosition.z - playerPosition.z)*(doorPosition.z - playerPosition.z);
+            if (distance <= minDistance){
+                minDistance = distance;
+                closestDoor = door;
+            }
+        }
+
+        if (closestDoor!=null) {
+            if (closestDoor.canPlayerInteractAtDistance((float)Math.sqrt(minDistance))) {
+                closestDoor.changeStatus();
+            }
+        }
+    }
+
+    public void render(final Camera camera, final Matrix4f projectionMatrix, final Transformation transformation,
+                       final Vector3f ambientLight, final float specularPower, final DirectionalLight sunLight) {
+
+        shaderProgram.bind();
+
+        shaderProgram.setUniform("projectionMatrix",projectionMatrix);
+        shaderProgram.setUniform("texture_sampler", 0);
+
+        // Update view Matrix
+        Matrix4f viewMatrix = transformation.getViewMatrix(camera);
+
+        // Update Light Uniforms
+        shaderProgram.setUniform("ambientLight", ambientLight);
+        shaderProgram.setUniform("specularPower", specularPower);
+
+
+        // Get position of the sun on the world and set it as a directional light
+        DirectionalLight currDirLight = new DirectionalLight(sunLight);
+        Vector4f dir = new Vector4f(currDirLight.getDirection(), 0); // Do not translate, only rotate (that's what the w=0 does)
+        // Convert direction of the light to camera/view  coordinates
+        dir.mul(viewMatrix);
+        currDirLight.setDirection(new Vector3f(dir.x, dir.y, dir.z));
+        shaderProgram.setUniform("directionalLight", currDirLight);
+
+
+        // Get all rooms from the map to draw
+        for (Room room : getRooms()){
+            Matrix4f modelViewMatrix = transformation.getModelViewMatrix(room, viewMatrix) ;
+            shaderProgram.setUniform("modelViewMatrix", modelViewMatrix);
+            room.render(shaderProgram, viewMatrix);
+        }
+
+        // Get all rooms connectors from the map to draw
+        for (RoomConnector connector : getConnectors()){
+            Matrix4f modelViewMatrix = transformation.getModelViewMatrix(connector, viewMatrix) ;
+            shaderProgram.setUniform("modelViewMatrix", modelViewMatrix);
+            connector.render(shaderProgram, viewMatrix);
+        }
+
+        // Get all doors
+        for (DoomDoor door : getDoors()) {
+            Matrix4f modelViewMatrix = transformation.getModelViewMatrix(door, viewMatrix) ;
+            shaderProgram.setUniform("modelViewMatrix", modelViewMatrix);
+            door.render(shaderProgram, viewMatrix);
+        }
+
+
+        shaderProgram.unbind();
     }
 
 }

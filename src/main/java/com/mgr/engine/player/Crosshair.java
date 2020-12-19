@@ -4,9 +4,10 @@ import com.mgr.engine.Material;
 import com.mgr.engine.Mesh;
 import com.mgr.engine.Texture;
 import com.mgr.engine.items.GameItem;
+import com.mgr.engine.items.IGameItem;
 import org.joml.Vector3f;
 
-public class Crosshair extends GameItem {
+public class Crosshair extends GameItem implements IGameItem {
 
     public Crosshair(final Texture texture, final float width, final float height) {
         super();
@@ -23,17 +24,17 @@ public class Crosshair extends GameItem {
         // The mesh it's a simple square
         // Two triangles
 
-        float[] vertices = { -width/2, -height/2, 0.0f,   // 0
-                              width/2, -height/2, 0.0f,   // 1
-                             -width/2, height/2, 0.0f,    // 2
-                              width/2, height/2, 0.0f };  // 3
+        float[] vertices = { 0, 0, 0.0f,   // 0
+                              width, 0, 0.0f,   // 1
+                              width, height, 0.0f,    // 2
+                             0, height, 0.0f };  // 3
 
-        int[] indices    = { 1, 0, 2, 1, 2, 3};
+        int[] indices    = { 0, 3, 1, 2, 1, 3};
 
-        float[] textcoords = {1f, 1f,
-                              0f, 1f,
-                              0f, 0f,
-                              1f, 0f};
+        float[] textcoords = {0f, 1f,
+                              1f, 1f,
+                              1f, 0f,
+                              0f, 0f};
 
         final Mesh mesh = new Mesh();
         mesh.init(vertices, indices, new float[0], textcoords);

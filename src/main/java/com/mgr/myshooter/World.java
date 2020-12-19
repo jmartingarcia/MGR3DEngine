@@ -1,7 +1,7 @@
 package com.mgr.myshooter;
 
 import com.mgr.configuration.PropertiesLoader;
-import com.mgr.engine.items.GameItem;
+import com.mgr.engine.*;
 import com.mgr.engine.light.DirectionalLight;
 import com.mgr.engine.collision.BoundingBox;
 import com.mgr.engine.collision.CollisionDetector;
@@ -10,6 +10,7 @@ import com.mgr.myshooter.Map.RandomMap;
 import com.mgr.myshooter.Map.Room;
 import com.mgr.myshooter.Map.RoomConnector;
 import org.apache.commons.lang3.tuple.Pair;
+import org.joml.Matrix4f;
 import org.joml.Vector2i;
 import org.joml.Vector3f;
 
@@ -31,6 +32,10 @@ public class World {
     private DirectionalLight sun;
     private int time; //In minutes: from 0 to 1440, where 720 is noon
 
+    private ShaderProgram mapShaderProgram;
+
+
+
     public World(PropertiesLoader props) {
         map = new RandomMap(MAX_POINT_LIGHTS, MAX_SPOT_LIGHTS, props);
 
@@ -39,20 +44,10 @@ public class World {
         time = 720;
     }
 
-    public void init() {
+    public void init() throws Exception {
         map.generateRandomMap(MAX_NUMBER_ROOMS);
-    }
-
-    public List<Room> getMapRooms() {
-        return map.getRooms();
-    }
-
-    public List<RoomConnector> getMapRoomConnectors() {
-        return map.getConnectors();
-    }
-
-    public List<DoomDoor> getDoors() {
-        return map.getDoors();
+        createMapShader();
+        map.setShaderProgram(mapShaderProgram);
     }
 
     public Pair<Integer, int[][]> getMapPlanAsIntMatrix() {
@@ -65,6 +60,7 @@ public class World {
 
     public void cleanUp() {
         map.cleanUp();
+        mapShaderProgram.cleanup();
     }
 
     public void setTime(int minutesAfterMidnight) {
@@ -93,6 +89,23 @@ public class World {
 
     public int getMAX_SPOT_LIGHTS() {
         return MAX_SPOT_LIGHTS;
+    }
+
+    private void createMapShader() throws Exception{
+        mapShaderProgram = new ShaderProgram();
+        mapShaderProgram.createVertexShader(Utils.loadResource("/Shaders/vertex.vs"));
+        mapShaderProgram.createFragmentShader(Utils.loadResource("/Shaders/fragment.fs"));
+        mapShaderProgram.link();
+
+        mapShaderProgram.createUniform("projectionMatrix");
+        mapShaderProgram.createUniform("modelViewMatrix");
+        mapShaderProgram.createUniform("texture_sampler");
+        mapShaderProgram.createUniform("specularPower");
+        mapShaderProgram.createUniform("ambientLight");
+        mapShaderProgram.createMaterialUniform("material");
+        mapShaderProgram.createDirectionalLightUniform("directionalLight");
+        mapShaderProgram.createPointLightListUniform("pointLights", getMAX_POINT_LIGHTS());
+        mapShaderProgram.createSpotLightListUniform("spotLights", getMAX_SPOT_LIGHTS());
     }
 
     // Based on time calculates the position of the sun and color of the light
@@ -133,11 +146,6 @@ public class World {
         return CollisionDetector.willItemCollideAgainstAABB(box, allWallAABB);
     }
 
-    public List<DoomDoor> getDoorsOnTheRoom(final Vector3f currentPosition) {
-        // Get item current cell position map (in cells)
-        final Vector2i itemCellPosition = getItemCellPosition(currentPosition);
-        return map.getAllDoorsAtCellPosition(itemCellPosition);
-    }
 
     public Vector3f getFirstRoomCenter() {
         return map.getCenterRoomByIndex(1);
@@ -145,33 +153,22 @@ public class World {
 
     public void playerInteractClosestItem(final Vector3f playerPosition) {
 
-        // Get closest doors
-        final List<DoomDoor> doors = getDoorsOnTheRoom(playerPosition);
-        DoomDoor closestDoor = null;
-        float minDistance = 9999999.99f;
-
-
-        for (DoomDoor door : doors) {
-            final Vector3f doorPosition = door.getPosition();
-            final float distance = (doorPosition.x - playerPosition.x)*(doorPosition.x - playerPosition.x) +
-                                   (doorPosition.y - playerPosition.y)*(doorPosition.y - playerPosition.y) +
-                                   (doorPosition.z - playerPosition.z)*(doorPosition.z - playerPosition.z);
-            if (distance <= minDistance){
-                minDistance = distance;
-                closestDoor = door;
-            }
-        }
-
-        if (closestDoor!=null) {
-            if (closestDoor.canPlayerInteractAtDistance((float)Math.sqrt(minDistance))) {
-                closestDoor.changeStatus();
-            }
-        }
+        // Can player interact with map items (like doors)
+        map.playerInteractItems(playerPosition);
 
     }
 
     public void updateItemsStatus(final float interval) {
          // Update Doors Status
         map.updateDoorsStatus(interval);
+    }
+
+    public void render(final Camera camera, final Matrix4f projectionMatrix, final Transformation transformation) {
+
+        final Vector3f ambientLight = new Vector3f(1.0f,1.0f,1.0f);
+        final float specularPower = 1.0f;
+
+        map.render(camera, projectionMatrix, transformation, ambientLight, specularPower, getSunLight());
+
     }
 }

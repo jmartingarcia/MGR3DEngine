@@ -6,12 +6,13 @@ import com.mgr.engine.Mesh;
 import com.mgr.engine.collision.BoundingBox;
 import org.joml.Vector3f;
 
-public abstract class GameItem {
+public abstract class GameItem implements IGameItem {
 
     protected Mesh mesh;
     protected Vector3f position;
     protected float scale;
     protected Vector3f rotation;
+
     protected float width;
     protected float height;
     protected float depth;
@@ -130,6 +131,17 @@ public abstract class GameItem {
         mesh.cleanUp();
     }
 
+    public float getWidth() {
+        return width;
+    }
+
+    public float getHeight() {
+        return height;
+    }
+
+    public float getDepth() {
+        return depth;
+    }
 
     // Calculates the next position the item will move but it won't actually move it
     public Vector3f getNextPosition(final float elapsedSeconds, final Vector3f direction) {
@@ -140,7 +152,7 @@ public abstract class GameItem {
         return new_position;
     }
 
-    protected Vector3f getPositionOffset(final float elapsedSeconds, final Vector3f direction) {
+    public Vector3f getPositionOffset(final float elapsedSeconds, final Vector3f direction) {
         return new Vector3f(direction.x * speed * elapsedSeconds,
                 direction.y * speed * elapsedSeconds,
                 direction.z * speed * elapsedSeconds);

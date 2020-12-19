@@ -11,6 +11,8 @@ import org.joml.Vector2f;
 import org.joml.Vector2i;
 import org.joml.Vector3f;
 
+import java.util.Collections;
+
 import static org.lwjgl.glfw.GLFW.*;
 
 public class MGRGame implements IGameLogic, IKeyListener {
@@ -40,7 +42,7 @@ public class MGRGame implements IGameLogic, IKeyListener {
         properties = new PropertiesLoader();
         world      = new World(properties);
         renderer   = new Renderer();
-        player     = new Player();
+        player     = new Player(true);
         profiler   = new Profiler();
     }
     
@@ -146,7 +148,9 @@ public class MGRGame implements IGameLogic, IKeyListener {
             prepareProfileData();
         }
 
-        renderer.render(player.getCamera(), window, showProfilerData);
+        final Camera currentCamera = player.getCamera();
+
+        renderer.render(Collections.singletonList(player), currentCamera, window, showProfilerData);
     }
 
     private void prepareProfileData() {
@@ -193,9 +197,13 @@ public class MGRGame implements IGameLogic, IKeyListener {
 
     private void createNewMap() {
         if (world != null) {
-            world.cleanUp();
-            world.init();
-            setPlayerInitialPosition();
+            try {
+                world.cleanUp();
+                world.init();
+                setPlayerInitialPosition();
+            } catch (final Exception ex) {
+                System.out.println("Could not create Map " + ex.getMessage());
+            }
         }
     }
 
@@ -205,6 +213,7 @@ public class MGRGame implements IGameLogic, IKeyListener {
 
     @Override
     public void cleanUp(){
+        player.cleanUp();
         world.cleanUp();
         renderer.cleanUp();
         profiler.cleanUp();

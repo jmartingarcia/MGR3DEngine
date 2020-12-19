@@ -1,9 +1,6 @@
 package com.mgr.engine.items;
 
-import com.mgr.engine.Material;
-import com.mgr.engine.Mesh;
-import com.mgr.engine.Texture;
-import com.mgr.engine.Utils;
+import com.mgr.engine.*;
 import com.mgr.engine.items.GameItem;
 
 import java.util.ArrayList;
@@ -11,7 +8,7 @@ import java.util.List;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 
-public class TextItem extends GameItem {
+public class TextItem extends GameItem implements  IGameItem {
     private static final float ZPOS = 0.0f;
     private static final int VERTICES_PER_QUAD = 4;
     private String text;
@@ -19,7 +16,7 @@ public class TextItem extends GameItem {
     private final int numRows;
     private final Texture texture;
 
-    public TextItem(String text, String fontFileName, int numCols, int numRows) throws Exception {
+    public TextItem(final String text, final String fontFileName, final int numCols, final int numRows) throws Exception {
         super();
         this.text = text;
         this.numCols = numCols;
@@ -44,7 +41,6 @@ public class TextItem extends GameItem {
         for (int i = 0; i < numChars; i++) {
             final byte currChar = chars[i];
             final int col = currChar % numCols;
-            //int row = (currChar / numCols) - 2;
             final int row = (currChar / numCols);
 
             //Left top vertex
@@ -108,6 +104,10 @@ public class TextItem extends GameItem {
     public void cleanUp() {
         super.cleanUp();
         texture.cleanup();
+    }
+
+    public void render() {
+        mesh.render();
     }
 
     public void update(final float interval) {
