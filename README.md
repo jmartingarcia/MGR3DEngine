@@ -2,6 +2,8 @@
 
 A personal **Java / OpenGL** project: a small 3D engine (LWJGL) with a procedural-map demo. Built to stay hands-on with **systems fundamentals**—fixed-timestep loops, GPU shaders, spatial data structures, and real-time performance—not as a commercial game product.
 
+Demo: https://www.youtube.com/watch?v=ePsJM23K5L4
+
 ---
 
 ## Highlights
