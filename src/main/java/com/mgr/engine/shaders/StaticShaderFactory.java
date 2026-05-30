@@ -16,7 +16,7 @@ public class StaticShaderFactory {
     public static void createAllShaders(final int maxPointLights, final int maxSpotLights) throws Exception {
         shadersMap.put(ShaderType.SimpleShaderOrthographic, createSimpleShaderOrthographic());
         shadersMap.put(ShaderType.StandardWorldShader, createStandardWorldShader(maxPointLights, maxSpotLights));
-        shadersMap.put(ShaderType.AnimatedItemShader, createAnimatedItemShader(maxPointLights, maxSpotLights));
+        //shadersMap.put(ShaderType.AnimatedItemShader, createAnimatedItemShader(maxPointLights, maxSpotLights));
     }
 
     public static ShaderProgram getSimpleShaderOrthographic() {

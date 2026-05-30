@@ -58,7 +58,7 @@ public class World {
         map.generateRandomMap(MAX_NUMBER_ROOMS);
         mapShaderProgram = StaticShaderFactory.getStandardWorldShader();
         map.setShaderProgram(mapShaderProgram);
-        generateWorldItems(worldItems);
+        //generateWorldItems(worldItems);
     }
 
     public Pair<Integer, int[][]> getMapPlanAsIntMatrix() {
