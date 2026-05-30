@@ -1,14 +1,17 @@
 package com.mgr.engine.items;
 
 import com.mgr.engine.*;
-import com.mgr.engine.items.GameItem;
+import com.mgr.engine.light.DirectionalLight;
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
+import org.joml.Vector4f;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 
-public class TextItem extends GameItem implements  IGameItem {
+public class TextItem extends GameItem implements IGameItem {
     private static final float ZPOS = 0.0f;
     private static final int VERTICES_PER_QUAD = 4;
     private String text;
@@ -22,7 +25,7 @@ public class TextItem extends GameItem implements  IGameItem {
         this.numCols = numCols;
         this.numRows = numRows;
         texture = new Texture(fontFileName);
-        this.setMesh(buildMesh(texture, numCols, numRows));
+        this.setMesh(new Mesh[] { buildMesh(texture, numCols, numRows) });
         setScale(0.3f);
     }
 
@@ -80,11 +83,11 @@ public class TextItem extends GameItem implements  IGameItem {
 
         }
 
-        final float[] posArr        = Utils.listToArray(positions);
-        final float[] textCoordsArr = Utils.listToArray(textCoords);
-        final int[] indicesArr      = indices.stream().mapToInt(i->i).toArray();
+        final float[] posArr        = Utils.listFloatsToArray(positions);
+        final float[] textCoordsArr = Utils.listFloatsToArray(textCoords);
+        final int[] indicesArr      = Utils.listIntegersToArray(indices);
         final Mesh mesh             = new Mesh(); // We don't need normals for the text
-        mesh.init(posArr, indicesArr, new float[0], textCoordsArr);
+        mesh.init(posArr, indicesArr, new float[0], textCoordsArr, null, null);
         mesh.setMaterial(new Material(texture));
 
         return mesh;
@@ -98,7 +101,7 @@ public class TextItem extends GameItem implements  IGameItem {
     public void setText(String text) {
         this.text = text;
         this.getMesh().cleanUp();
-        this.setMesh(buildMesh(texture, numCols, numRows));
+        this.setMesh(new Mesh[] { buildMesh(texture, numCols, numRows) });
     }
 
     public void cleanUp() {
@@ -106,11 +109,16 @@ public class TextItem extends GameItem implements  IGameItem {
         texture.cleanup();
     }
 
-    public void render() {
-        mesh.render();
-    }
-
     public void update(final float interval) {
         return;
     }
+
+    public void render(final Matrix4f projectionMatrix, final Matrix4f viewMatrix,
+                       final Transformation transformation, final Vector3f ambientLight,
+                       final DirectionalLight directionalLight) throws NullPointerException {
+
+        for (Mesh value : mesh)
+            value.render();
+    }
+
 }

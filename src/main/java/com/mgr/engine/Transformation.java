@@ -50,8 +50,11 @@ public class Transformation {
         }
 
         public Matrix4f getModelViewMatrix(final IGameItem item, final Matrix4f viewMatrix) {
-            modelViewMatrix.identity().translate(item.getPosition())
-                    .scale(item.getScale());
+            modelViewMatrix.identity().translate(item.getPosition()).
+                    rotateX((float)Math.toRadians(-item.getRotation().x)).
+                    rotateY((float)Math.toRadians(-item.getRotation().y)).
+                    rotateZ((float)Math.toRadians(-item.getRotation().z)).
+                    scale(item.getScale());
             Matrix4f viewCurr = new Matrix4f(viewMatrix);
             return viewCurr.mul(modelViewMatrix);
         }

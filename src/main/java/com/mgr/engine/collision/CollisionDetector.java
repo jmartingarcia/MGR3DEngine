@@ -1,8 +1,5 @@
 package com.mgr.engine.collision;
 
-import org.joml.Planef;
-import org.joml.Vector3f;
-
 import java.util.List;
 
 public class CollisionDetector {

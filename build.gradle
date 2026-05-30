@@ -8,7 +8,7 @@ version '1.0-SNAPSHOT'
 project.ext.lwjglVersion = "3.2.3"
 
 
-import org.gradle.internal.os.OperatingSystem
+import org.gradle.internal.os.OperatingSystem;
 //project.ext.lwjglNatives = "natives-macos"
 switch ( OperatingSystem.current() ) {
     case OperatingSystem.WINDOWS:

@@ -9,12 +9,12 @@ public class PropertiesLoader {
 
     private final Properties prop = new Properties();
 
-    public void init() {
+    public void init(final String propertiesFilePath) {
 
-        try (InputStream input = PropertiesLoader.class.getClassLoader().getResourceAsStream("config.properties")) {
+        try (InputStream input = PropertiesLoader.class.getClassLoader().getResourceAsStream(propertiesFilePath)) {
 
             if (input == null) {
-                throw new FileNotFoundException("Sorry, unable to find config.properties");
+                throw new FileNotFoundException("Sorry, unable to find " + propertiesFilePath);
             }
 
             //load a properties file from class path, inside static method
@@ -25,12 +25,8 @@ public class PropertiesLoader {
         }
     }
 
-
-    public String getBaseTexturesFolder() {
-         return prop.getProperty("base.folder.textures");
+    public String getPropertyValue(final String propertyKey) {
+        return prop.getProperty(propertyKey);
     }
 
-    public String getBaseShadersFolder() {
-        return prop.getProperty("base.folder.shaders");
-    }
 }

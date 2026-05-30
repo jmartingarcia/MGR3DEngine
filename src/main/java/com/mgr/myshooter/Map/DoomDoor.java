@@ -2,7 +2,10 @@ package com.mgr.myshooter.Map;
 
 import com.mgr.engine.Material;
 import com.mgr.engine.Mesh;
-import com.mgr.engine.ShaderProgram;
+import com.mgr.engine.Transformation;
+import com.mgr.engine.collision.BoundingBox;
+import com.mgr.engine.light.DirectionalLight;
+import com.mgr.engine.shaders.ShaderProgram;
 import com.mgr.engine.items.GameItem;
 import org.apache.commons.lang3.tuple.Pair;
 import org.joml.Matrix4f;
@@ -10,6 +13,7 @@ import org.joml.Vector3f;
 
 import javax.naming.directory.InvalidAttributeValueException;
 import java.util.HashMap;
+import java.util.List;
 
 public class DoomDoor extends GameItem {
 
@@ -49,9 +53,11 @@ public class DoomDoor extends GameItem {
         final int[] indices = calculateDoorIndices();
         final float[] normals = calculateNormals(doorCoords.getLeft(), indices);
 
-        mesh = new Mesh();
-        mesh.setMaterial(material);
-        mesh.init(doorCoords.getLeft(), indices, normals, doorCoords.getRight());
+        Mesh doorMesh = new Mesh();
+        doorMesh.setMaterial(material);
+        doorMesh.init(doorCoords.getLeft(), indices, normals, doorCoords.getRight(), null, null);
+
+        setMesh(new Mesh[] { doorMesh } );
 
     }
 
@@ -298,7 +304,7 @@ public class DoomDoor extends GameItem {
     // material
     public void render(final ShaderProgram shaderProgram, final Matrix4f viewMatrix) {
         shaderProgram.setUniform("material", getMaterial());
-        render();
+        render(null, null, null,null, null);
     }
 
     public boolean canPlayerInteractAtDistance(final float playerDistance) {
@@ -308,6 +314,15 @@ public class DoomDoor extends GameItem {
     public void changeStatus() {
         if (status == DoorStatus.CLOSED) open();
         else if (status == DoorStatus.OPEN) close();
+    }
+
+    public void render(final Matrix4f projectionMatrix, final Matrix4f viewMatrix,
+                       final Transformation transformation, final Vector3f ambientLight,
+                       final DirectionalLight directionalLight) throws NullPointerException {
+
+        for (Mesh value : mesh)
+            value.render();
+
     }
 
 }

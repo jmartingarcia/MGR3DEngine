@@ -4,7 +4,7 @@ import org.joml.Vector4f;
 
 public class Material {
 
-    private static final Vector4f DEFAULT_COLOR = new Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
+    public static final Vector4f DEFAULT_COLOR = new Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
 
     private Vector4f ambientColor;
 
@@ -16,6 +16,9 @@ public class Material {
 
     private Texture texture;
 
+    private Texture normalMap;
+
+
     public Material() {
         this.ambientColor = DEFAULT_COLOR;
         this.diffuseColor = DEFAULT_COLOR;
@@ -24,19 +27,27 @@ public class Material {
         this.reflectance = 0;
     }
 
-    public Material(Vector4f color, float reflectance) {
+    public Material(final Vector4f color, final float reflectance) {
         this(color, color, color, null, reflectance);
     }
 
-    public Material(Texture texture) {
+    public Material(final Texture texture) {
         this(DEFAULT_COLOR, DEFAULT_COLOR, DEFAULT_COLOR, texture, 0);
     }
 
-    public Material(Texture texture, float reflectance) {
+    public Material(final Texture texture, final float reflectance) {
         this(DEFAULT_COLOR, DEFAULT_COLOR, DEFAULT_COLOR, texture, reflectance);
     }
 
-    public Material(Vector4f ambientColor, Vector4f diffuseColor, Vector4f specularColor, Texture texture, float reflectance) {
+    public Material(final Vector4f ambientColour, final Vector4f diffuseColour, final Vector4f specularColour, final float reflectance) {
+        this.ambientColor = ambientColour;
+        this.diffuseColor = diffuseColour;
+        this.specularColor = specularColour;
+        this.texture = null;
+        this.reflectance = reflectance;
+    }
+
+    public Material(final Vector4f ambientColor, final Vector4f diffuseColor, final Vector4f specularColor, final Texture texture, final float reflectance) {
         this.ambientColor  = ambientColor;
         this.diffuseColor  = diffuseColor;
         this.specularColor = specularColor;
@@ -49,7 +60,7 @@ public class Material {
         return ambientColor;
     }
 
-    public void setAmbientColor(Vector4f ambientColor) {
+    public void setAmbientColor(final Vector4f ambientColor) {
         this.ambientColor = ambientColor;
     }
 
@@ -58,7 +69,7 @@ public class Material {
         return diffuseColor;
     }
 
-    public void setDiffuseColor(Vector4f diffuseColor) {
+    public void setDiffuseColor(final Vector4f diffuseColor) {
 
         this.diffuseColor = diffuseColor;
     }
@@ -68,7 +79,7 @@ public class Material {
         return specularColor;
     }
 
-    public void setSpecularColour(Vector4f specularColor) {
+    public void setSpecularColour(final Vector4f specularColor) {
         this.specularColor = specularColor;
     }
 
@@ -76,7 +87,7 @@ public class Material {
         return reflectance;
     }
 
-    public void setReflectance(float reflectance) {
+    public void setReflectance(final float reflectance) {
         this.reflectance = reflectance;
     }
 
@@ -90,14 +101,27 @@ public class Material {
         return texture;
     }
 
-    public void setTexture(Texture texture) {
+    public void setTexture(final Texture texture) {
 
         this.texture = texture;
+    }
+
+    public Texture getNormalMap() {
+        return normalMap;
+    }
+
+    public void setNormalMap(final Texture normalMap) {
+        this.normalMap = normalMap;
+    }
+
+    public boolean hasNormalMap(){
+        return this.normalMap != null;
     }
 
     public void cleanUp() {
 
         if (isTextured()) texture.cleanup();
+        if (hasNormalMap()) normalMap.cleanup();
     }
 
 }

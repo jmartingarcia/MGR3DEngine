@@ -27,8 +27,11 @@ import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
 import static org.lwjgl.opengl.GL30.glBindVertexArray;
 import static org.lwjgl.opengl.GL30.glDeleteVertexArrays;
 import static org.lwjgl.opengl.GL30.glGenVertexArrays;
+import static org.lwjgl.opengles.GLES20.GL_TEXTURE1;
 
 public class Mesh {
+
+    public static final int MAX_WEIGHTS = 4;
 
     protected int vaoId;
     protected final List<Integer> vboIdList;
@@ -47,12 +50,12 @@ public class Mesh {
     }
 
 
-    public void init(float[] vertices, int[] indices, float[] normals, float[] textCoords) {
+    public void init(float[] vertices, int[] indices, float[] normals, float[] textCoords, int[] bones, float[] weights) {
 
         numberVertices = vertices.length/3; //x,y,z makes one vertex
         numberIndices  = indices.length;
 
-        // Calculate the bounding box of the wall
+        // Calculate the bounding box
         for (int i=0;i<vertices.length;i+=3){
             final Vector3f point = new Vector3f(vertices[i+0],vertices[i+1],vertices[i+2]);
             box.add(point);
@@ -62,6 +65,9 @@ public class Mesh {
         IntBuffer indicesBuffer = null;
         FloatBuffer textCoordsBuffer = null;
         FloatBuffer normalsBuffer = null;
+        FloatBuffer weightsBuffer = null;
+        IntBuffer bonesIndicesBuffer = null;
+
 
         try {
             vertexCount = indices.length;
@@ -109,6 +115,31 @@ public class Mesh {
                 glBufferData(GL_ARRAY_BUFFER, textCoordsBuffer, GL_STATIC_DRAW);
                 glEnableVertexAttribArray(1);
                 glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
+            }
+
+            // Weights
+            if (weights != null && weights.length > 0) {
+                int weightsVboId = glGenBuffers();
+                vboIdList.add(weightsVboId);
+                weightsBuffer = MemoryUtil.memAllocFloat(weights.length);
+                weightsBuffer.put(weights).flip();
+                glBindBuffer(GL_ARRAY_BUFFER, weightsVboId);
+                glBufferData(GL_ARRAY_BUFFER, weightsBuffer, GL_STATIC_DRAW);
+                glEnableVertexAttribArray(3);
+                glVertexAttribPointer(3, 4, GL_FLOAT, false, 0, 0);
+            }
+
+
+            // Joint indices
+            if (bones != null && bones.length > 0) {
+                int bonesVboId = glGenBuffers();
+                vboIdList.add(bonesVboId);
+                bonesIndicesBuffer = MemoryUtil.memAllocInt(bones.length);
+                bonesIndicesBuffer.put(bones).flip();
+                glBindBuffer(GL_ARRAY_BUFFER, bonesVboId);
+                glBufferData(GL_ARRAY_BUFFER, bonesIndicesBuffer, GL_STATIC_DRAW);
+                glEnableVertexAttribArray(4);
+                glVertexAttribPointer(4, 4, GL_FLOAT, false, 0, 0);
             }
 
             glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -187,6 +218,7 @@ public class Mesh {
     }
 
     public void render() {
+
         Texture texture = material.getTexture();
         if (material.isTextured()) {
             // Activate first texture bank
@@ -201,7 +233,14 @@ public class Mesh {
             //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        }
 
+        Texture normalMap = material.getNormalMap();
+        if ( normalMap != null ) {
+            // Activate first texture bank
+            glActiveTexture(GL_TEXTURE1);
+            // Bind the texture
+            glBindTexture(GL_TEXTURE_2D, normalMap.getId());
         }
 
         glBindVertexArray(vaoId);
