@@ -1,15 +1,18 @@
 package com.mgr.engine.player;
 
-import com.mgr.engine.ShaderProgram;
+import com.mgr.engine.collision.BoundingBox;
+import com.mgr.engine.shaders.ShaderProgram;
 import com.mgr.engine.Texture;
 import com.mgr.engine.Transformation;
 import com.mgr.engine.Utils;
 import com.mgr.engine.items.*;
+import com.mgr.engine.shaders.StaticShaderFactory;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
-import javax.management.AttributeNotFoundException;
-import java.security.InvalidParameterException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 
 public class Player extends GameItem {
@@ -34,18 +37,6 @@ public class Player extends GameItem {
         this.isMainPlayer = isMainPlayer;
     }
 
-    private void createCrosshairShaderProgram() throws Exception {
-        shaderProgram = new ShaderProgram();
-        shaderProgram.createVertexShader(Utils.loadResource("/Shaders/simple_vertex.vs"));
-        shaderProgram.createFragmentShader(Utils.loadResource("/Shaders/simple_fragment.fs"));
-        shaderProgram.link();
-
-        // Create uniforms for Ortographic-model projection matrix and base color
-        shaderProgram.createUniform("projModelMatrix");
-        shaderProgram.createUniform("color");
-        shaderProgram.createUniform("texture_sampler");
-    }
-
     public void createCrosshair(final Texture crosshairTexture) throws Exception {
 
         final GameItemProperties itemProperties = new GameItemProperties();
@@ -55,13 +46,25 @@ public class Player extends GameItem {
 
         crosshair =  GameItemFactory.createItem(GameItemType.CROSSHAIR, itemProperties);
 
-        createCrosshairShaderProgram();
+        shaderProgram = StaticShaderFactory.getSimpleShaderOrthographic();
     }
 
     private void move(final float elapsedSeconds, final Vector3f direction){
         camera.movePositionBy(getPositionOffset(elapsedSeconds, direction));
         position = camera.getPosition(); // The camera movePositionBy takes into account the rotation
     }
+
+    public List<BoundingBox> getBoundingBox()  {
+          return boundingBoxes;
+    }
+
+    protected List<BoundingBox> calculateBoundingBoxes()  {
+        final BoundingBox box = new BoundingBox();
+        box.add(new Vector3f(position.x - width/2 - radius/2, position.y - height/2 - radius/2, position.z - depth/2 - radius/2 ));
+        box.add(new Vector3f(position.x + width/2 + radius/2, position.y + height/2 +  radius/2, position.z + depth/2 +  radius/2 ));
+        return List.of(box);
+    }
+
 
     private void turn(final float elapsedSeconds, final Vector3f direction){
         final Vector3f offset_rotation = new Vector3f(direction.x * rota_speed * elapsedSeconds, direction.y * rota_speed * elapsedSeconds, direction.z * rota_speed * elapsedSeconds);
@@ -113,7 +116,7 @@ public class Player extends GameItem {
         shaderProgram.setUniform("projModelMatrix", projModelMatrix);
         shaderProgram.setUniform("color", crosshair.getMesh().getMaterial().getAmbientColor());
 
-        crosshair.render();
+        crosshair.render(null, null, null,null,null);
 
         shaderProgram.unbind();
     }

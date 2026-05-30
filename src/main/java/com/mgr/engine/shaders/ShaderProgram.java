@@ -1,5 +1,6 @@
-package com.mgr.engine;
+package com.mgr.engine.shaders;
 
+import com.mgr.engine.Material;
 import com.mgr.engine.light.DirectionalLight;
 import com.mgr.engine.light.PointLight;
 import com.mgr.engine.light.SpotLight;
@@ -92,11 +93,17 @@ public class ShaderProgram {
         }
     }
 
+    public void createSimpleArrayUniform(String uniformName, int size) throws Exception {
+        for (int i = 0; i < size; i++) {
+            createUniform(uniformName + "[" + i + "]");
+        }
+    }
     public void createMaterialUniform(String uniformName) throws Exception {
         createUniform(uniformName + ".ambient");
         createUniform(uniformName + ".diffuse");
         createUniform(uniformName + ".specular");
         createUniform(uniformName + ".hasTexture");
+        createUniform(uniformName + ".hasNormalMap");
         createUniform(uniformName + ".reflectance");
     }
 
@@ -121,6 +128,7 @@ public class ShaderProgram {
         setUniform(uniformName + ".diffuse", material.getDiffuseColor());
         setUniform(uniformName + ".specular", material.getSpecularColour());
         setUniform(uniformName + ".hasTexture", material.isTextured() ? 1 : 0);
+        setUniform(uniformName + ".hasNormalMap", material.hasNormalMap() ? 1 : 0);
         setUniform(uniformName + ".reflectance", material.getReflectance());
     }
 
@@ -171,6 +179,14 @@ public class ShaderProgram {
             setUniform(uniformName, spotLights[i], i);
         }
     }
+
+    public void setUniform(String uniformName, Matrix4f[] matrices) {
+        int numMatrices = matrices != null ? matrices.length : 0;
+        for (int i = 0; i < numMatrices; i++) {
+            setUniform(uniformName + "[" + i + "]", matrices[i]);
+        }
+    }
+
 
     public void setUniform(String uniformName, SpotLight spotLight, int pos) {
         setUniform(uniformName + "[" + pos + "]", spotLight);

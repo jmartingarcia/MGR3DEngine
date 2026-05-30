@@ -3,8 +3,11 @@ package com.mgr.engine.player;
 import com.mgr.engine.Material;
 import com.mgr.engine.Mesh;
 import com.mgr.engine.Texture;
+import com.mgr.engine.Transformation;
 import com.mgr.engine.items.GameItem;
 import com.mgr.engine.items.IGameItem;
+import com.mgr.engine.light.DirectionalLight;
+import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
 public class Crosshair extends GameItem implements IGameItem {
@@ -16,7 +19,7 @@ public class Crosshair extends GameItem implements IGameItem {
         this.depth = 0.0f;
         position = new Vector3f(0f,0f,0f);
 
-        setMesh(buildMesh(texture));
+        setMesh(new Mesh[] { buildMesh(texture) } );
     }
 
     private Mesh buildMesh(final Texture texture) {
@@ -37,7 +40,7 @@ public class Crosshair extends GameItem implements IGameItem {
                               0f, 0f};
 
         final Mesh mesh = new Mesh();
-        mesh.init(vertices, indices, new float[0], textcoords);
+        mesh.init(vertices, indices, new float[0], textcoords, null, null);
         mesh.setMaterial(new Material(texture));
 
         return mesh;
@@ -46,5 +49,13 @@ public class Crosshair extends GameItem implements IGameItem {
     @Override
     public void update(float interval) {
 
+    }
+
+    public void render(final Matrix4f projectionMatrix, final Matrix4f viewMatrix,
+                       final Transformation transformation, final Vector3f ambientLight,
+                       final DirectionalLight directionalLight) throws NullPointerException {
+
+        for (Mesh value : mesh)
+            value.render();
     }
 }

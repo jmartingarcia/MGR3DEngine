@@ -121,4 +121,3 @@ src/main/resources/config.properties      # Local path configuration
 ## License
 
 Personal project. All rights reserved unless a license file is added later.
-

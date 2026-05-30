@@ -1,11 +1,13 @@
 package com.mgr.myshooter;
 
+import com.mgr.configuration.GameProperties;
 import com.mgr.configuration.PropertiesLoader;
 import com.mgr.engine.IGameLogic;
 import com.mgr.engine.Window;
 import com.mgr.engine.*;
 import com.mgr.engine.debug.Profiler;
 import com.mgr.engine.player.Player;
+import com.mgr.engine.shaders.StaticShaderFactory;
 import org.apache.commons.lang3.tuple.Pair;
 import org.joml.Vector2f;
 import org.joml.Vector2i;
@@ -30,7 +32,7 @@ public class MGRGame implements IGameLogic, IKeyListener {
     private final Player player;
     private boolean showProfilerData = false;
     private Profiler profiler;
-    private PropertiesLoader properties;
+    private GameProperties properties;
     private float elapsedTime = 0.0f;
     private final Vector3f defaultPositionPlayer = new Vector3f(0.0f, 30.0f, 0.0f);
     private final float MOUSE_SENSITIVITY = 0.2f;
@@ -39,7 +41,7 @@ public class MGRGame implements IGameLogic, IKeyListener {
 
 
     public MGRGame() throws Exception {
-        properties = new PropertiesLoader();
+        properties = new GameProperties();
         world      = new World(properties);
         renderer   = new Renderer();
         player     = new Player(true);
@@ -48,7 +50,7 @@ public class MGRGame implements IGameLogic, IKeyListener {
     
     @Override
     public void init(Window window) throws Exception {
-        properties.init();
+        StaticShaderFactory.createAllShaders(world.getMAX_POINT_LIGHTS(), world.getMAX_SPOT_LIGHTS());
         world.init();
         renderer.init(window, profiler, world);
         player.setPosition(defaultPositionPlayer);
@@ -117,7 +119,7 @@ public class MGRGame implements IGameLogic, IKeyListener {
         //Translation
         Vector3f moveDirection = new Vector3f(direction_x, direction_y, direction_z);
         if (direction_x != 0 || direction_y != 0 || direction_z != 0) {
-            if (willPlayerCollideWithWall(interval, moveDirection)) {
+            if (willPlayerCollideWithWall(interval, moveDirection) || willPlayerCollideWithItem(interval, moveDirection)) {
                 moveDirection = new Vector3f(0.0f, 0.0f, 0.0f); // Cannot move so set translation to zero
             }
         }
@@ -138,6 +140,14 @@ public class MGRGame implements IGameLogic, IKeyListener {
         final Vector3f playerNextPosition = new Vector3f(player.getNextPosition(interval, direction));
         return world.willPlayerCollideWithWall(player.getBoundingBoxAtPosition(playerNextPosition), playerCurrentPosition);
     }
+
+    private boolean willPlayerCollideWithItem(final float interval, final Vector3f direction) {
+        final Vector3f playerCurrentPosition = new Vector3f(player.getPosition());
+        final Vector3f playerNextPosition = new Vector3f(player.getNextPosition(interval, direction));
+        return world.willPlayerCollideWithItem(player.getBoundingBoxAtPosition(
+                playerNextPosition), playerCurrentPosition);
+    }
+
 
     @Override
     public void render(Window window) {
@@ -217,6 +227,7 @@ public class MGRGame implements IGameLogic, IKeyListener {
         world.cleanUp();
         renderer.cleanUp();
         profiler.cleanUp();
+        StaticShaderFactory.cleanUp();
     }
 
     private void printProfileData() {

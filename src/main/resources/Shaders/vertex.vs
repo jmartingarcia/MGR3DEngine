@@ -10,6 +10,7 @@ uniform mat4 projectionMatrix;
 out vec2 outTexCoord;
 out vec3 mvVertexNormal;
 out vec3 mvVertexPos;
+out mat4 outModelViewMatrix;
 
 
 void main()
@@ -22,4 +23,6 @@ void main()
     // The .xyz is called Swizzling. Returns a vec3 with the components defined.
     mvVertexNormal = normalize(modelViewMatrix * vec4(vertexNormal,0.0)).xyz;
     mvVertexPos = mvPos.xyz;
+    // Passing the modelViewMatrix to the Fragment shader to calculate normal from normal map if item has it
+    outModelViewMatrix = modelViewMatrix;
 }

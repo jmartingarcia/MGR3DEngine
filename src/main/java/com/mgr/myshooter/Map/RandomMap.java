@@ -1,15 +1,15 @@
 package com.mgr.myshooter.Map;
 
-import com.mgr.configuration.PropertiesLoader;
+import com.mgr.configuration.GameProperties;
 import com.mgr.engine.*;
 import com.mgr.engine.collision.BoundingBox;
 import com.mgr.engine.light.DirectionalLight;
+import com.mgr.engine.shaders.ShaderProgram;
 import org.apache.commons.lang3.tuple.Pair;
 import org.joml.*;
 
 import javax.management.InvalidAttributeValueException;
 import java.lang.Math;
-import java.lang.reflect.Array;
 import java.util.*;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -37,7 +37,7 @@ public class RandomMap {
     // This list will contain same connectors as on the Hashmap but as a list and unique.
     private List<RoomConnector> uniqueConnectors;
 
-    private PropertiesLoader props;
+    private GameProperties props;
 
     // In the future there will be more themes. Themes will determine different things on the map like textures
     private final MapTheme mapTheme = MapTheme.SPACESHIP;
@@ -56,7 +56,7 @@ public class RandomMap {
 
 
 
-    public RandomMap(final int maxPointLights, final int maxSpotLights, final PropertiesLoader props){
+    public RandomMap(final int maxPointLights, final int maxSpotLights, final GameProperties props){
         this.maxPointLights = maxPointLights;
         this.maxSpotLights  = maxSpotLights;
         this.props = props;
@@ -533,7 +533,9 @@ public class RandomMap {
             // Get all doors associated to the connector
             for (RoomConnector connector : listConnectors) {
                 final DoomDoor door = doorPerConnector.get(connector.getIndex());
-                doorsAABB.add(door.getBoundingBox());
+                final List<BoundingBox> boxes = door.getBoundingBox();
+                for (BoundingBox box : boxes)
+                   doorsAABB.add(box);
             }
         }
         return doorsAABB;
@@ -601,16 +603,13 @@ public class RandomMap {
         }
     }
 
-    public void render(final Camera camera, final Matrix4f projectionMatrix, final Transformation transformation,
+    public void render(final Matrix4f projectionMatrix, final  Matrix4f viewMatrix, final Transformation transformation,
                        final Vector3f ambientLight, final float specularPower, final DirectionalLight sunLight) {
 
         shaderProgram.bind();
 
         shaderProgram.setUniform("projectionMatrix",projectionMatrix);
         shaderProgram.setUniform("texture_sampler", 0);
-
-        // Update view Matrix
-        Matrix4f viewMatrix = transformation.getViewMatrix(camera);
 
         // Update Light Uniforms
         shaderProgram.setUniform("ambientLight", ambientLight);
@@ -642,6 +641,7 @@ public class RandomMap {
 
         // Get all doors
         for (DoomDoor door : getDoors()) {
+            door.setShaderProgram(shaderProgram);
             Matrix4f modelViewMatrix = transformation.getModelViewMatrix(door, viewMatrix) ;
             shaderProgram.setUniform("modelViewMatrix", modelViewMatrix);
             door.render(shaderProgram, viewMatrix);

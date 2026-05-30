@@ -4,6 +4,7 @@ import com.mgr.engine.*;
 import com.mgr.engine.collision.BoundingBox;
 import com.mgr.engine.light.PointLight;
 import com.mgr.engine.light.SpotLight;
+import com.mgr.engine.shaders.ShaderProgram;
 import org.joml.*;
 
 import javax.management.InvalidAttributeValueException;

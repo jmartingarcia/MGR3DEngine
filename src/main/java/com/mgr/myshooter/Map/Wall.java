@@ -61,7 +61,7 @@ public class Wall extends Mesh {
 
         WallData wallData = createFullWall();
 
-        init(wallData.getVertices(), wallData.getIndices(), wallData.getNormals(), wallData.getTextCoords());
+        init(wallData.getVertices(), wallData.getIndices(), wallData.getNormals(), wallData.getTextCoords(), null, null);
     }
 
 

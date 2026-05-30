@@ -3,8 +3,15 @@ package com.mgr.engine.items;
 import com.mgr.engine.Camera;
 import com.mgr.engine.Material;
 import com.mgr.engine.Mesh;
+import com.mgr.engine.Transformation;
 import com.mgr.engine.collision.BoundingBox;
+import com.mgr.engine.light.DirectionalLight;
+import com.mgr.engine.shaders.ShaderProgram;
+import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import org.joml.Vector4f;
+
+import java.util.List;
 
 public interface IGameItem {
         float getWidth();
@@ -20,7 +27,7 @@ public interface IGameItem {
         Vector3f getRotation();
         void setRotation(final Vector3f rotation);
         Mesh getMesh();
-        void setMesh(Mesh mesh);
+        void setMesh(Mesh[] mesh);
         float getSpeed();
         void setSpeed(final float speed);
         float getRota_speed();
@@ -28,13 +35,16 @@ public interface IGameItem {
         Vector3f getUpvector();
         void setUpvector(final Vector3f upvector);
         Camera getCamera();
-        void render();
+        void render(final Matrix4f projectionMatrix, final Matrix4f viewMatrix,
+                    final Transformation transformation, final Vector3f ambientLight,
+                    final DirectionalLight directionalLight);
         void cleanUp();
         Vector3f getNextPosition(final float elapsedSeconds, final Vector3f direction);
         Vector3f getPositionOffset(final float elapsedSeconds, final Vector3f direction);
-        BoundingBox getBoundingBox();
+        List<BoundingBox> getBoundingBox();
         BoundingBox getBoundingBoxAtPosition(final Vector3f newPosition);
         int getNumberVertices();
         int getNumberIndices();
         void update(final float interval);
+        void setShaderProgram(final ShaderProgram shaderProgram);
 }

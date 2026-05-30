@@ -3,12 +3,22 @@ package com.mgr.engine.items;
 import com.mgr.engine.Camera;
 import com.mgr.engine.Material;
 import com.mgr.engine.Mesh;
+import com.mgr.engine.Transformation;
 import com.mgr.engine.collision.BoundingBox;
+import com.mgr.engine.light.DirectionalLight;
+import com.mgr.engine.shaders.ShaderProgram;
+import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import org.joml.Vector4f;
 
-public abstract class GameItem implements IGameItem {
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
-    protected Mesh mesh;
+public class GameItem implements IGameItem {
+
+    protected ShaderProgram shaderProgram;
+    protected Mesh[] mesh;
     protected Vector3f position;
     protected float scale;
     protected Vector3f rotation;
@@ -24,6 +34,9 @@ public abstract class GameItem implements IGameItem {
 
     protected float interactionDistance; // Max distance to be able to interact with the object
 
+    protected float specularPower = 1.0f;
+
+    protected List<BoundingBox> boundingBoxes;
 
     public GameItem() {
         position = new Vector3f();
@@ -34,18 +47,18 @@ public abstract class GameItem implements IGameItem {
         rotation.z = 0.0f;
         speed = 85.0f;
         rota_speed = 45.0f;
-        radius = 10.0f;
+        radius = 2.0f;
         camera = new Camera();
         width = 1.0f;
         height = 1.0f;
         depth = 1.0f;
         interactionDistance = 30.0f;
+        specularPower = 1.0f;
     }
     
-    public GameItem(Mesh mesh) {
-        super();
+    public GameItem(final Mesh[] mesh) {
+        this();
         this.mesh = mesh;
-        camera = new Camera();
     }
 
     public Vector3f getPosition() {
@@ -56,6 +69,13 @@ public abstract class GameItem implements IGameItem {
     public void setPosition(final Vector3f position) {
         this.position = new Vector3f(position);
         camera.setPosition(new Vector3f(position));
+
+        // Everytime the item moves, the bounding boxes needs to be recalculated to the new position
+        boundingBoxes = calculateBoundingBoxes();
+    }
+
+    public void setShaderProgram(final ShaderProgram shaderProgram) {
+        this.shaderProgram = shaderProgram;
     }
 
     public float getScale() {
@@ -75,7 +95,15 @@ public abstract class GameItem implements IGameItem {
     }
 
     public Material getMaterial() {
-        return mesh.getMaterial();
+        return mesh[0].getMaterial();
+    }
+
+    public List<Material> getAllMaterials() {
+        ArrayList<Material> materials = new ArrayList<>();
+        for (Mesh value : mesh) {
+            materials.add(value.getMaterial());
+        }
+        return materials;
     }
 
     public Vector3f getRotation() {
@@ -88,10 +116,14 @@ public abstract class GameItem implements IGameItem {
     }
 
     public Mesh getMesh() {
+        return mesh[0];
+    }
+
+    public Mesh[] getAllMeshes() {
         return mesh;
     }
-    
-    public void setMesh(Mesh mesh) {
+
+    public void setMesh(Mesh[] mesh) {
         this.mesh = mesh;
     }
 
@@ -123,12 +155,35 @@ public abstract class GameItem implements IGameItem {
         return camera;
     }
 
-    public void render() {
-        mesh.render();
+    public void render(final Matrix4f projectionMatrix, final Matrix4f viewMatrix,
+                       final Transformation transformation, final Vector3f ambientLight,
+                       final DirectionalLight directionalLight) throws NullPointerException {
+
+
+        if (shaderProgram == null)
+            throw new NullPointerException("Game Item Shader not defined");
+
+        shaderProgram.bind();
+
+        shaderProgram.setUniform("projectionMatrix",projectionMatrix);
+        shaderProgram.setUniform("modelViewMatrix", transformation.getModelViewMatrix(this, viewMatrix));
+
+        shaderProgram.setUniform("material", getMaterial());
+        shaderProgram.setUniform("ambientLight", ambientLight);
+        shaderProgram.setUniform("specularPower", specularPower);
+        shaderProgram.setUniform("texture_sampler", 0);
+        shaderProgram.setUniform("normalMap", 1);
+
+        for (Mesh value : mesh)
+            value.render();
+
+        shaderProgram.unbind();
     }
 
     public void cleanUp() {
-        mesh.cleanUp();
+        for (Mesh value : mesh)
+            value.cleanUp();
+        mesh = null;
     }
 
     public float getWidth() {
@@ -158,11 +213,12 @@ public abstract class GameItem implements IGameItem {
                 direction.z * speed * elapsedSeconds);
     }
 
-    public BoundingBox getBoundingBox()  {
+    public List<BoundingBox> getBoundingBox()  {
         final BoundingBox box = new BoundingBox();
         box.add(new Vector3f(position.x - width/2 - radius/2, position.y - height/2 - radius/2, position.z - depth/2 - radius/2 ));
         box.add(new Vector3f(position.x + width/2 + radius/2, position.y + height/2 +  radius/2, position.z + depth/2 +  radius/2 ));
-        return box;
+        return List.of(box);
+        //return boundingBoxes;
     }
 
     public BoundingBox getBoundingBoxAtPosition(final Vector3f newPosition)  {
@@ -173,13 +229,48 @@ public abstract class GameItem implements IGameItem {
     }
 
     public int getNumberVertices() {
-        return mesh.getNumberVertices();
+        int totalVertices = 0;
+        for (Mesh value : mesh){
+            totalVertices += value.getNumberVertices();
+        }
+        return totalVertices;
     }
 
     public int getNumberIndices() {
-        return mesh.getNumberIndices();
+        int totalIndices = 0;
+        for (Mesh value : mesh){
+            totalIndices += value.getNumberIndices();
+        }
+        return totalIndices;
     }
 
-    public abstract void update(final float interval);
+    public void update(final float interval) {
+
+    }
+
+    /*
+    This method is just calculating the bounding boxes of each mesh but is not taking into account the movement
+    as part of the animation
+    TODO -- We need to take into account the new position of the vertices during animation
+     */
+    protected List<BoundingBox> calculateBoundingBoxes()  {
+
+        if (getAllMeshes() == null) return null;
+
+        final ArrayList<BoundingBox> result = new ArrayList<>();
+        final Matrix4f translationMatrix = new Matrix4f();
+        translationMatrix.translate(position);
+
+        Arrays.stream(getAllMeshes()).forEach(
+                (mesh) -> {
+                    final BoundingBox box =  mesh.getBoundingBoxCopy();
+                    // Need to translate the box the current item's position
+                    box.setToTransformedBox(box,translationMatrix);
+                    result.add(box);
+                }
+        );
+
+        return result;
+    }
 
 }

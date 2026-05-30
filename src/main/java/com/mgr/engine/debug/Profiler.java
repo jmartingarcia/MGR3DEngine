@@ -1,10 +1,12 @@
 package com.mgr.engine.debug;
 
 
-import com.mgr.configuration.PropertiesLoader;
+import com.mgr.configuration.GameProperties;
 import com.mgr.engine.*;
 import com.mgr.engine.items.IGameItem;
 import com.mgr.engine.items.TextItem;
+import com.mgr.engine.shaders.ShaderProgram;
+import com.mgr.engine.shaders.StaticShaderFactory;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
@@ -17,15 +19,16 @@ public class Profiler {
 
 
     private final Map<String, TextItem> profilerInfo = new HashMap<>();;
-    private PropertiesLoader props;
+    private GameProperties props;
     private ShaderProgram shaderProgram;
 
 
 
-    public void init(PropertiesLoader props) throws Exception {
+    public void init(GameProperties props) throws Exception {
 
         this.props = props;
-        createShaderProgram();
+
+        shaderProgram = StaticShaderFactory.getSimpleShaderOrthographic();
     }
 
     public List<TextItem> getTextItems() {
@@ -38,17 +41,6 @@ public class Profiler {
         }
     }
 
-    private void createShaderProgram() throws Exception {
-        shaderProgram = new ShaderProgram();
-        shaderProgram.createVertexShader(Utils.loadResource("/Shaders/simple_vertex.vs"));
-        shaderProgram.createFragmentShader(Utils.loadResource("/Shaders/simple_fragment.fs"));
-        shaderProgram.link();
-
-        // Create uniforms for Ortographic-model projection matrix and base color
-        shaderProgram.createUniform("projModelMatrix");
-        shaderProgram.createUniform("color");
-        shaderProgram.createUniform("texture_sampler");
-    }
 
     public void setProfilerEntry(String key, String value) {
          if (profilerInfo.containsKey(key)) {
@@ -67,21 +59,26 @@ public class Profiler {
         }
     }
 
-    public void render(final Window window, final Transformation transformation) {
+    public void render(final Window window, final Transformation transformation) throws NullPointerException {
+
+        if (shaderProgram == null)
+            throw new NullPointerException("Game Item Shader not defined");
+
         shaderProgram.bind();
 
         shaderProgram.setUniform("texture_sampler", 0);
 
         Matrix4f ortho = transformation.getOrthoProjectionMatrix(0, (float)window.getWidth(), (float)window.getHeight(), 0);
 
-        for (IGameItem textItem : getTextItems()) {
+        for (TextItem textItem : getTextItems()) {
             // Set orthographic and model matrix for this text item
+            textItem.setShaderProgram(shaderProgram);
             Matrix4f projModelMatrix = transformation.getOrtoProjModelMatrix(textItem, ortho);
             shaderProgram.setUniform("projModelMatrix", projModelMatrix);
             shaderProgram.setUniform("color", textItem.getMesh().getMaterial().getAmbientColor());
 
             // Render the mesh for this HUD item
-            textItem.render();
+            textItem.render(null, null, null, null, null);
         }
 
         shaderProgram.unbind();
@@ -92,7 +89,6 @@ public class Profiler {
             TextItem item = profilerInfo.get(key);
             if (item != null) item.cleanUp();
         }
-        shaderProgram.cleanup();
     }
 
 }
